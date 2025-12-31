@@ -13,7 +13,7 @@ const INITIAL_SPEED = 150;
 const SPEED_INCREASE = 3;
 const MIN_SPEED = 60;
 const TOTAL_LEVELS = 10;
-const POINTS_PER_LEVEL = 10;
+let pointsPerLevel = 10; // Можно менять через настройки
 
 // Настройки еды
 const FOOD_LIFETIME = 8000; // 8 секунд жизни еды
@@ -348,7 +348,7 @@ function startLevelMode(level) {
     loadLevel(level);
     elements.levelInfo.classList.remove('hidden');
     elements.currentLevel.textContent = level;
-    elements.levelGoal.textContent = POINTS_PER_LEVEL;
+    elements.levelGoal.textContent = pointsPerLevel;
     startGame();
 }
 
@@ -462,7 +462,7 @@ function eatFood() {
 
     haptic('light');
 
-    if (gameState.mode === 'levels' && gameState.levelScore >= POINTS_PER_LEVEL) {
+    if (gameState.mode === 'levels' && gameState.levelScore >= pointsPerLevel) {
         levelComplete();
         return;
     }
@@ -806,40 +806,24 @@ function drawSnake(ctx, cellSize) {
         ctx.restore();
     }
 
-    // Рисуем круглые сегменты поверх соединений
-    for (let i = len - 1; i >= 3; i--) {
-        const seg = getCoords(snake[i]);
-        const progress = i / Math.max(len - 1, 1);
-        const w = getWidth(i);
-
-        const goldR = Math.floor(255 - progress * 50);
-        const goldG = Math.floor(200 - progress * 60);
-        const goldB = Math.floor(50 - progress * 30);
-
-        // 3D градиент
-        const grad = ctx.createRadialGradient(
-            seg.x - w * 0.2, seg.y - w * 0.2, 0,
-            seg.x, seg.y, w / 2
+    // Кончик хвоста (округлённый)
+    if (len > 1) {
+        const tail = getCoords(snake[len - 1]);
+        const tailW = getWidth(len - 1);
+        const tailGrad = ctx.createRadialGradient(
+            tail.x - tailW * 0.2, tail.y - tailW * 0.2, 0,
+            tail.x, tail.y, tailW / 2
         );
-        grad.addColorStop(0, `rgb(${Math.min(255, goldR + 50)}, ${Math.min(255, goldG + 40)}, ${goldB + 30})`);
-        grad.addColorStop(0.5, `rgb(${goldR}, ${goldG}, ${goldB})`);
-        grad.addColorStop(1, `rgb(${Math.max(0, goldR - 50)}, ${Math.max(0, goldG - 45)}, ${Math.max(0, goldB - 20)})`);
-
-        ctx.fillStyle = grad;
+        tailGrad.addColorStop(0, '#d4a520');
+        tailGrad.addColorStop(0.5, '#b8860b');
+        tailGrad.addColorStop(1, '#8b6914');
+        ctx.fillStyle = tailGrad;
         ctx.beginPath();
-        ctx.arc(seg.x, seg.y, w / 2, 0, Math.PI * 2);
+        ctx.arc(tail.x, tail.y, tailW / 2, 0, Math.PI * 2);
         ctx.fill();
-
-        // Чешуйки (каждый 3-й сегмент)
-        if (i % 3 === 0) {
-            ctx.fillStyle = `rgba(255, 255, 200, ${0.15 - progress * 0.1})`;
-            ctx.beginPath();
-            ctx.ellipse(seg.x, seg.y - w * 0.15, w * 0.3, w * 0.2, 0, 0, Math.PI * 2);
-            ctx.fill();
-        }
     }
 
-    // === ГОЛОВА ЗМЕЙКИ (3 клетки) ===
+    // === ГОЛОВА ЗМЕЙКИ (2 клетки) ===
     drawSnakeHead(ctx, cellSize, snake, dir);
 }
 
@@ -850,10 +834,10 @@ function drawSnakeHead(ctx, cellSize, snake, dir) {
     const hx = head.x * cellSize + cellSize / 2;
     const hy = head.y * cellSize + cellSize / 2;
 
-    // Размеры головы (3 клетки в длину)
-    const headLength = cellSize * 2.2;
-    const headWidth = cellSize * 1.1;
-    const neckWidth = cellSize * 0.8;
+    // Размеры головы (2 клетки в длину)
+    const headLength = cellSize * 1.5;
+    const headWidth = cellSize * 0.95;
+    const neckWidth = cellSize * 0.75;
 
     // Угол направления
     let angle = 0;
@@ -869,7 +853,7 @@ function drawSnakeHead(ctx, cellSize, snake, dir) {
     // Тень головы
     ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
     ctx.beginPath();
-    ctx.ellipse(3, 4, headLength / 2, headWidth / 2 * 0.7, 0, 0, Math.PI * 2);
+    ctx.ellipse(2, 3, headLength / 2, headWidth / 2 * 0.7, 0, 0, Math.PI * 2);
     ctx.fill();
 
     // Шея (соединение с телом)
@@ -880,14 +864,14 @@ function drawSnakeHead(ctx, cellSize, snake, dir) {
         neckGrad.addColorStop(1, '#cc9900');
         ctx.fillStyle = neckGrad;
         ctx.beginPath();
-        ctx.ellipse(-headLength / 3, 0, neckWidth / 2, neckWidth / 2, 0, 0, Math.PI * 2);
+        ctx.ellipse(-headLength / 2.5, 0, neckWidth / 2, neckWidth / 2, 0, 0, Math.PI * 2);
         ctx.fill();
     }
 
-    // Основа головы - каплевидная форма
+    // Основа головы - овальная форма
     const headGrad = ctx.createRadialGradient(
-        -headLength * 0.1, -headWidth * 0.15, 0,
-        0, 0, headLength / 1.5
+        -headLength * 0.1, -headWidth * 0.1, 0,
+        0, 0, headLength / 1.3
     );
     headGrad.addColorStop(0, '#fff5b3');
     headGrad.addColorStop(0.2, '#ffe066');
@@ -897,47 +881,39 @@ function drawSnakeHead(ctx, cellSize, snake, dir) {
 
     ctx.fillStyle = headGrad;
     ctx.beginPath();
-    // Каплевидная форма головы
-    ctx.moveTo(-headLength / 3, 0);
+    // Овальная форма головы с заострённым носом
+    ctx.moveTo(-headLength / 2.5, 0);
     ctx.bezierCurveTo(
-        -headLength / 4, -headWidth / 2,
-        headLength / 3, -headWidth / 2.5,
-        headLength / 2.2, 0
+        -headLength / 3, -headWidth / 2,
+        headLength / 4, -headWidth / 2.2,
+        headLength / 2, 0
     );
     ctx.bezierCurveTo(
-        headLength / 3, headWidth / 2.5,
-        -headLength / 4, headWidth / 2,
-        -headLength / 3, 0
+        headLength / 4, headWidth / 2.2,
+        -headLength / 3, headWidth / 2,
+        -headLength / 2.5, 0
     );
     ctx.fill();
 
     // Верхний блик
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.35)';
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
     ctx.beginPath();
-    ctx.ellipse(0, -headWidth * 0.2, headLength * 0.35, headWidth * 0.15, 0, 0, Math.PI * 2);
+    ctx.ellipse(0, -headWidth * 0.18, headLength * 0.3, headWidth * 0.12, 0, 0, Math.PI * 2);
     ctx.fill();
-
-    // Чешуйки на голове
-    ctx.fillStyle = 'rgba(255, 200, 50, 0.3)';
-    for (let i = 0; i < 3; i++) {
-        ctx.beginPath();
-        ctx.ellipse(-headLength * 0.1 + i * headLength * 0.12, -headWidth * 0.05, headLength * 0.08, headLength * 0.06, 0, 0, Math.PI * 2);
-        ctx.fill();
-    }
 
     // Ноздри
     ctx.fillStyle = '#4a3000';
     ctx.beginPath();
-    ctx.ellipse(headLength * 0.35, -headWidth * 0.12, 2, 3, 0, 0, Math.PI * 2);
+    ctx.ellipse(headLength * 0.35, -headWidth * 0.1, 1.5, 2.5, 0, 0, Math.PI * 2);
     ctx.fill();
     ctx.beginPath();
-    ctx.ellipse(headLength * 0.35, headWidth * 0.12, 2, 3, 0, 0, Math.PI * 2);
+    ctx.ellipse(headLength * 0.35, headWidth * 0.1, 1.5, 2.5, 0, 0, Math.PI * 2);
     ctx.fill();
 
     // === ГЛАЗА ===
-    const eyeOffsetX = headLength * 0.05;
-    const eyeOffsetY = headWidth * 0.28;
-    const eyeRadius = headWidth * 0.2;
+    const eyeOffsetX = headLength * 0.0;
+    const eyeOffsetY = headWidth * 0.3;
+    const eyeRadius = headWidth * 0.22;
     const pupilRadius = eyeRadius * 0.55;
 
     // Глаза
@@ -949,53 +925,33 @@ function drawSnakeHead(ctx, cellSize, snake, dir) {
         eyeGrad.addColorStop(1, '#e8e0d0');
         ctx.fillStyle = eyeGrad;
         ctx.beginPath();
-        ctx.ellipse(eyeOffsetX, eye.y, eyeRadius, eyeRadius * 0.9, 0, 0, Math.PI * 2);
+        ctx.ellipse(eyeOffsetX, eye.y, eyeRadius, eyeRadius * 0.85, 0, 0, Math.PI * 2);
         ctx.fill();
 
         // Обводка глаза
         ctx.strokeStyle = '#8b7500';
-        ctx.lineWidth = 1.5;
+        ctx.lineWidth = 1;
         ctx.stroke();
 
         // Зрачок (рубиновый вертикальный)
         const pupilGrad = ctx.createRadialGradient(
-            eyeOffsetX + 2, eye.y, 0,
-            eyeOffsetX + 2, eye.y, pupilRadius
+            eyeOffsetX + 1, eye.y, 0,
+            eyeOffsetX + 1, eye.y, pupilRadius
         );
         pupilGrad.addColorStop(0, '#ff3030');
         pupilGrad.addColorStop(0.4, '#dd0000');
         pupilGrad.addColorStop(1, '#660000');
         ctx.fillStyle = pupilGrad;
         ctx.beginPath();
-        ctx.ellipse(eyeOffsetX + 2, eye.y, pupilRadius * 0.4, pupilRadius, 0, 0, Math.PI * 2);
+        ctx.ellipse(eyeOffsetX + 1, eye.y, pupilRadius * 0.35, pupilRadius * 0.9, 0, 0, Math.PI * 2);
         ctx.fill();
 
         // Блик в глазу
         ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
         ctx.beginPath();
-        ctx.arc(eyeOffsetX - eyeRadius * 0.3, eye.y - eyeRadius * 0.3, pupilRadius * 0.35, 0, Math.PI * 2);
+        ctx.arc(eyeOffsetX - eyeRadius * 0.25, eye.y - eyeRadius * 0.25, pupilRadius * 0.3, 0, Math.PI * 2);
         ctx.fill();
     });
-
-    // Язык (иногда высовывается)
-    if (Math.sin(gameState.time * 3) > 0.3) {
-        const tongueLength = headLength * 0.4 + Math.sin(gameState.time * 8) * 5;
-        ctx.strokeStyle = '#ff4060';
-        ctx.lineWidth = 2;
-        ctx.lineCap = 'round';
-
-        // Раздвоенный язык
-        ctx.beginPath();
-        ctx.moveTo(headLength / 2.2, 0);
-        ctx.lineTo(headLength / 2.2 + tongueLength * 0.7, 0);
-        ctx.lineTo(headLength / 2.2 + tongueLength, -4);
-        ctx.stroke();
-
-        ctx.beginPath();
-        ctx.moveTo(headLength / 2.2 + tongueLength * 0.7, 0);
-        ctx.lineTo(headLength / 2.2 + tongueLength, 4);
-        ctx.stroke();
-    }
 
     ctx.restore();
 }
@@ -1018,6 +974,15 @@ function setupEventListeners() {
 
     document.querySelectorAll('.tab-btn').forEach(btn => {
         btn.addEventListener('click', () => showLeaderboard(btn.dataset.tab));
+    });
+
+    // Кнопки выбора цели для уровней
+    document.querySelectorAll('.goal-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.goal-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            pointsPerLevel = parseInt(btn.dataset.goal);
+        });
     });
 
     document.getElementById('btn-resume').addEventListener('click', resumeGame);
@@ -1074,6 +1039,11 @@ function setupSwipeControls() {
     }, { passive: true });
 
     document.addEventListener('touchmove', e => {
+        // Блокируем скролл окна во время игры
+        if (gameState.isPlaying && !gameState.isPaused) {
+            e.preventDefault();
+        }
+
         if (!isSwiping || !gameState.isPlaying || gameState.isPaused) return;
 
         const dx = e.touches[0].clientX - startX;
@@ -1090,11 +1060,14 @@ function setupSwipeControls() {
             startX = e.touches[0].clientX;
             startY = e.touches[0].clientY;
         }
-    }, { passive: true });
+    }, { passive: false }); // passive: false для preventDefault
 
     document.addEventListener('touchend', () => {
         isSwiping = false;
     }, { passive: true });
+
+    // Дополнительно блокируем pull-to-refresh в Telegram
+    document.body.style.overscrollBehavior = 'none';
 }
 
 function haptic(type) {
