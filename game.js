@@ -212,20 +212,22 @@ function cacheElements() {
 }
 
 function setupCanvas() {
-    const container = document.getElementById('game-container');
+    window.addEventListener('resize', resizeCanvas);
+}
 
-    function resize() {
-        const size = Math.min(container.clientWidth, container.clientHeight) - 4;
+function resizeCanvas() {
+    const container = document.getElementById('game-container');
+    if (!container) return;
+
+    const size = Math.min(container.clientWidth, container.clientHeight) - 4;
+    if (size > 0) {
         elements.canvas.width = size;
         elements.canvas.height = size;
-
-        if (gameState.isPlaying && !gameState.isPaused) {
-            draw();
-        }
     }
 
-    resize();
-    window.addEventListener('resize', resize);
+    if (gameState.isPlaying && !gameState.isPaused) {
+        draw();
+    }
 }
 
 function loadData() {
@@ -395,6 +397,9 @@ function loadLevel(level) {
 function startGame() {
     showScreen('game-screen');
     hideAllOverlays();
+
+    // Пересчитываем размер canvas после показа экрана
+    setTimeout(resizeCanvas, 10);
 
     // Сброс состояния
     const startX = Math.floor(GRID_SIZE / 2);
