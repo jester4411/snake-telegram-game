@@ -1,5 +1,5 @@
 // ==========================================
-// 🐉 УРОБОРОС - Мифическая змейка v2.5
+// 🐉 УРОБОРОС - Мифическая змейка v2.6
 // ==========================================
 
 const tg = window.Telegram?.WebApp;
@@ -8,6 +8,7 @@ let pointsPerLevel = 10;
 // Состояние игры
 let gameState = {
     mode: null,
+    difficulty: DIFFICULTY.NORMAL, // Режим сложности
     currentLevel: 1,
     snake: [],
     food: { x: 0, y: 0 },
@@ -18,6 +19,7 @@ let gameState = {
     score: 0,
     levelScore: 0,
     totalScore: 0,
+    maxScore: 0, // Для режима бессмертия
     obstacles: [],
     gameLoop: null,
     animationFrame: null,
@@ -205,8 +207,18 @@ function startSurvivalMode() {
     gameState.currentLevel = 0;
     gameState.obstacles = [];
     gameState.speed = INITIAL_SPEED;
+    // Устанавливаем максимальный счёт для режима бессмертия
+    gameState.maxScore = GRID_SIZE * GRID_SIZE - 1; // Все клетки кроме головы
     elements.levelInfo.classList.add('hidden');
     startGame();
+}
+
+function setDifficulty(difficulty) {
+    gameState.difficulty = difficulty;
+    // Обновляем UI кнопок
+    document.querySelectorAll('.difficulty-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.difficulty === difficulty);
+    });
 }
 
 function startLevelMode(level) {
@@ -316,15 +328,39 @@ function gameStep() {
     head.x += gameState.direction.x;
     head.y += gameState.direction.y;
 
-    // Телепортация
-    head.x = (head.x + GRID_SIZE) % GRID_SIZE;
-    head.y = (head.y + GRID_SIZE) % GRID_SIZE;
+    const difficulty = gameState.difficulty;
 
-    if (gameState.snake.some(seg => seg.x === head.x && seg.y === head.y)) {
-        gameOver();
-        return;
+    // Обработка стен в зависимости от режима
+    if (difficulty === DIFFICULTY.HARDCORE) {
+        // Хардкор: смерть при столкновении со стеной
+        if (head.x < 0 || head.x >= GRID_SIZE || head.y < 0 || head.y >= GRID_SIZE) {
+            gameOver();
+            return;
+        }
+    } else {
+        // Обычный и Бессмертие: телепортация через стены
+        head.x = (head.x + GRID_SIZE) % GRID_SIZE;
+        head.y = (head.y + GRID_SIZE) % GRID_SIZE;
     }
 
+    // Обработка столкновения с хвостом
+    const hitSelf = gameState.snake.some(seg => seg.x === head.x && seg.y === head.y);
+    if (hitSelf) {
+        if (difficulty === DIFFICULTY.IMMORTAL) {
+            // Бессмертие: проходим сквозь себя, но проверяем максимальный счёт
+            if (gameState.score >= gameState.maxScore) {
+                // Достигли максимума - победа!
+                immortalWin();
+                return;
+            }
+        } else {
+            // Обычный и Хардкор: смерть от хвоста
+            gameOver();
+            return;
+        }
+    }
+
+    // Проверка столкновения с препятствиями
     if (isObstacle(head.x, head.y)) {
         gameOver();
         return;
@@ -337,6 +373,24 @@ function gameStep() {
     } else {
         gameState.snake.pop();
     }
+}
+
+// Победа в режиме бессмертия
+function immortalWin() {
+    gameState.isPlaying = false;
+    clearInterval(gameState.gameLoop);
+    if (gameState.foodTimer) clearInterval(gameState.foodTimer);
+    if (gameState.animationFrame) cancelAnimationFrame(gameState.animationFrame);
+
+    haptic('success');
+
+    addRecord('survival', gameState.score, null);
+    elements.totalScore.textContent = gameState.score;
+
+    // Показываем экран победы
+    document.getElementById('game-complete').querySelector('h2').textContent = '🌟 Бессмертие достигнуто!';
+    document.getElementById('game-complete').querySelector('p').textContent = `Заполнено клеток: ${gameState.score}/${gameState.maxScore}`;
+    elements.gameComplete.classList.remove('hidden');
 }
 
 function eatFood() {

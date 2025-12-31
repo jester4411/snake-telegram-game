@@ -84,6 +84,165 @@ function drawObstacles(ctx, cellSize) {
 }
 
 function drawFood(ctx, cellSize) {
+    const difficulty = gameState.difficulty || DIFFICULTY.NORMAL;
+
+    if (difficulty === DIFFICULTY.IMMORTAL) {
+        drawFoodFlower(ctx, cellSize);
+    } else if (difficulty === DIFFICULTY.HARDCORE) {
+        drawFoodRuby(ctx, cellSize);
+    } else {
+        drawFoodGolden(ctx, cellSize);
+    }
+}
+
+// Зеленые цветы для режима Бессмертие
+function drawFoodFlower(ctx, cellSize) {
+    const x = gameState.food.x * cellSize + cellSize / 2;
+    const y = gameState.food.y * cellSize + cellSize / 2;
+    const baseRadius = cellSize / 2 - 3;
+
+    const brightness = gameState.foodStage / FOOD_STAGES;
+    const pulseScale = 1 + Math.sin(gameState.time * 4) * 0.1;
+    const radius = baseRadius * pulseScale * (0.7 + brightness * 0.3);
+
+    // Зеленое свечение
+    const glowRadius = radius * (2 + brightness);
+    const glow = ctx.createRadialGradient(x, y, 0, x, y, glowRadius);
+    const glowAlpha = 0.4 * brightness;
+    glow.addColorStop(0, `rgba(100, 255, 100, ${glowAlpha})`);
+    glow.addColorStop(0.5, `rgba(50, 200, 50, ${glowAlpha * 0.5})`);
+    glow.addColorStop(1, 'transparent');
+    ctx.fillStyle = glow;
+    ctx.beginPath();
+    ctx.arc(x, y, glowRadius, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Лепестки цветка
+    const petalCount = 5;
+    const petalLen = radius * 0.9;
+    const petalWidth = radius * 0.5;
+    const coreAlpha = 0.5 + brightness * 0.5;
+
+    for (let i = 0; i < petalCount; i++) {
+        const angle = (i / petalCount) * Math.PI * 2 + gameState.time * 0.5;
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.rotate(angle);
+
+        const petalGrad = ctx.createLinearGradient(0, 0, petalLen, 0);
+        petalGrad.addColorStop(0, `rgba(100, 220, 100, ${coreAlpha})`);
+        petalGrad.addColorStop(0.5, `rgba(50, 180, 50, ${coreAlpha})`);
+        petalGrad.addColorStop(1, `rgba(30, 150, 30, ${coreAlpha * 0.6})`);
+
+        ctx.fillStyle = petalGrad;
+        ctx.beginPath();
+        ctx.ellipse(petalLen * 0.5, 0, petalLen * 0.5, petalWidth * 0.5, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.restore();
+    }
+
+    // Центр цветка
+    const centerGrad = ctx.createRadialGradient(x, y, 0, x, y, radius * 0.4);
+    centerGrad.addColorStop(0, `rgba(255, 255, 150, ${coreAlpha})`);
+    centerGrad.addColorStop(0.5, `rgba(255, 220, 50, ${coreAlpha})`);
+    centerGrad.addColorStop(1, `rgba(200, 180, 0, ${coreAlpha * 0.8})`);
+
+    ctx.fillStyle = centerGrad;
+    ctx.beginPath();
+    ctx.arc(x, y, radius * 0.35, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Блик
+    ctx.fillStyle = `rgba(255, 255, 255, ${0.5 * brightness})`;
+    ctx.beginPath();
+    ctx.arc(x - radius * 0.1, y - radius * 0.1, radius * 0.15, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Таймер
+    if (brightness < 1) {
+        ctx.strokeStyle = `rgba(100, 255, 100, ${1 - brightness})`;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(x, y, radius + 4, -Math.PI / 2, -Math.PI / 2 + (Math.PI * 2 * brightness));
+        ctx.stroke();
+    }
+}
+
+// Красные рубины для режима Хардкор
+function drawFoodRuby(ctx, cellSize) {
+    const x = gameState.food.x * cellSize + cellSize / 2;
+    const y = gameState.food.y * cellSize + cellSize / 2;
+    const baseRadius = cellSize / 2 - 3;
+
+    const brightness = gameState.foodStage / FOOD_STAGES;
+    const pulseScale = 1 + Math.sin(gameState.time * 4) * 0.1;
+    const radius = baseRadius * pulseScale * (0.7 + brightness * 0.3);
+
+    // Красное свечение
+    const glowRadius = radius * (2 + brightness);
+    const glow = ctx.createRadialGradient(x, y, 0, x, y, glowRadius);
+    const glowAlpha = 0.5 * brightness;
+    glow.addColorStop(0, `rgba(255, 50, 50, ${glowAlpha})`);
+    glow.addColorStop(0.5, `rgba(200, 0, 50, ${glowAlpha * 0.5})`);
+    glow.addColorStop(1, 'transparent');
+    ctx.fillStyle = glow;
+    ctx.beginPath();
+    ctx.arc(x, y, glowRadius, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Рубин (ромб/кристалл)
+    const coreAlpha = 0.6 + brightness * 0.4;
+
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(gameState.time * 0.3);
+
+    // Основная форма рубина
+    const rubyGrad = ctx.createLinearGradient(-radius, -radius, radius, radius);
+    rubyGrad.addColorStop(0, `rgba(255, 100, 100, ${coreAlpha})`);
+    rubyGrad.addColorStop(0.3, `rgba(220, 30, 50, ${coreAlpha})`);
+    rubyGrad.addColorStop(0.7, `rgba(180, 0, 30, ${coreAlpha})`);
+    rubyGrad.addColorStop(1, `rgba(100, 0, 20, ${coreAlpha * 0.8})`);
+
+    ctx.fillStyle = rubyGrad;
+    ctx.beginPath();
+    ctx.moveTo(0, -radius);
+    ctx.lineTo(radius * 0.7, 0);
+    ctx.lineTo(0, radius);
+    ctx.lineTo(-radius * 0.7, 0);
+    ctx.closePath();
+    ctx.fill();
+
+    // Грани кристалла
+    ctx.fillStyle = `rgba(255, 150, 150, ${coreAlpha * 0.4})`;
+    ctx.beginPath();
+    ctx.moveTo(0, -radius);
+    ctx.lineTo(radius * 0.7, 0);
+    ctx.lineTo(0, 0);
+    ctx.closePath();
+    ctx.fill();
+
+    // Блик
+    ctx.fillStyle = `rgba(255, 255, 255, ${0.7 * brightness})`;
+    ctx.beginPath();
+    ctx.ellipse(-radius * 0.15, -radius * 0.4, radius * 0.2, radius * 0.15, -0.5, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.restore();
+
+    // Таймер
+    if (brightness < 1) {
+        ctx.strokeStyle = `rgba(255, 50, 50, ${1 - brightness})`;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(x, y, radius + 4, -Math.PI / 2, -Math.PI / 2 + (Math.PI * 2 * brightness));
+        ctx.stroke();
+    }
+}
+
+// Золотой шар для обычного режима
+function drawFoodGolden(ctx, cellSize) {
     const x = gameState.food.x * cellSize + cellSize / 2;
     const y = gameState.food.y * cellSize + cellSize / 2;
     const baseRadius = cellSize / 2 - 3;
@@ -320,31 +479,39 @@ function drawSnake(ctx, cellSize) {
         }
     }
 
-    // Хвост
+    // Хвост (с проверкой на телепортацию)
     if (len > 1) {
-        const tail = getCoords(snake[len - 1]);
-        const prev = getCoords(snake[len - 2]);
-        const tailW = getWidth(len - 1) * 0.7;
-        const angle = Math.atan2(tail.y - prev.y, tail.x - prev.x);
+        const tailSeg = snake[len - 1];
+        const prevSeg = snake[len - 2];
 
-        ctx.save();
-        ctx.translate(tail.x, tail.y);
-        ctx.rotate(angle);
+        // Пропускаем рендер хвоста при телепортации (разница в координатах > 1)
+        const isTeleporting = Math.abs(tailSeg.x - prevSeg.x) > 1 || Math.abs(tailSeg.y - prevSeg.y) > 1;
 
-        const tailGrad = ctx.createLinearGradient(-tailW, 0, tailW * 2, 0);
-        tailGrad.addColorStop(0, '#c9941a');
-        tailGrad.addColorStop(0.5, '#a67c15');
-        tailGrad.addColorStop(1, '#8b6914');
+        if (!isTeleporting) {
+            const tail = getCoords(tailSeg);
+            const prev = getCoords(prevSeg);
+            const tailW = getWidth(len - 1) * 0.7;
+            const angle = Math.atan2(tail.y - prev.y, tail.x - prev.x);
 
-        ctx.fillStyle = tailGrad;
-        ctx.beginPath();
-        ctx.moveTo(-tailW, -tailW * 0.6);
-        ctx.quadraticCurveTo(tailW, -tailW * 0.3, tailW * 1.5, 0);
-        ctx.quadraticCurveTo(tailW, tailW * 0.3, -tailW, tailW * 0.6);
-        ctx.closePath();
-        ctx.fill();
+            ctx.save();
+            ctx.translate(tail.x, tail.y);
+            ctx.rotate(angle);
 
-        ctx.restore();
+            const tailGrad = ctx.createLinearGradient(-tailW, 0, tailW * 2, 0);
+            tailGrad.addColorStop(0, '#c9941a');
+            tailGrad.addColorStop(0.5, '#a67c15');
+            tailGrad.addColorStop(1, '#8b6914');
+
+            ctx.fillStyle = tailGrad;
+            ctx.beginPath();
+            ctx.moveTo(-tailW, -tailW * 0.6);
+            ctx.quadraticCurveTo(tailW, -tailW * 0.3, tailW * 1.5, 0);
+            ctx.quadraticCurveTo(tailW, tailW * 0.3, -tailW, tailW * 0.6);
+            ctx.closePath();
+            ctx.fill();
+
+            ctx.restore();
+        }
     }
 
     // Голова

@@ -17,8 +17,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Architecture
 
 ### Files
-- `js/constants.js` - Константы и конфигурация уровней
-- `js/render.js` - Все функции отрисовки (Canvas 2D)
+- `js/constants.js` - Константы, уровни (25 штук), режимы сложности
+- `js/render.js` - Все функции отрисовки (Canvas 2D), включая 3 вида еды
 - `js/controls.js` - Обработка ввода (клавиатура, свайпы, кнопки)
 - `js/game.js` - Основная логика, состояние, игровой цикл
 - `style.css` - Styling with CSS variables for theming
@@ -26,9 +26,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ### Key Concepts
 
+**Difficulty Modes:**
+- IMMORTAL (Бессмертие): сквозь стены и хвост, зеленые цветы, макс счёт = клетки
+- NORMAL (Обычный): сквозь стены, смерть от хвоста, золотой шар
+- HARDCORE (Хардкор): смерть от стен и хвоста, красные рубины
+
 **Game Modes:**
 - Survival: Endless mode with increasing speed
-- Levels: 10 progressive levels with obstacles, configurable goal (5/10/15/20 points)
+- Levels: 25 progressive levels with obstacles, configurable goal (5/10/15/20 points)
 
 **gameState object** holds all runtime state: snake array, food position, direction, scores, animation timers, `waitingForInput` flag.
 

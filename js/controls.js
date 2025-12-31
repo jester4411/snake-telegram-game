@@ -10,6 +10,14 @@ function setupEventListeners() {
     });
     document.getElementById('btn-leaderboard').addEventListener('click', () => showLeaderboard('survival'));
 
+    // Обработчики выбора сложности
+    document.querySelectorAll('.difficulty-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            setDifficulty(btn.dataset.difficulty);
+            haptic('selection');
+        });
+    });
+
     document.getElementById('btn-back-levels').addEventListener('click', () => showScreen('main-menu'));
     document.getElementById('btn-back-leaderboard').addEventListener('click', () => showScreen('main-menu'));
     document.getElementById('btn-back-game').addEventListener('click', pauseGame);

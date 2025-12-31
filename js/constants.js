@@ -6,15 +6,23 @@ const GRID_SIZE = 20;
 const INITIAL_SPEED = 150;
 const SPEED_INCREASE = 3;
 const MIN_SPEED = 60;
-const TOTAL_LEVELS = 10;
+const TOTAL_LEVELS = 25;
 
 // Настройки еды
 const FOOD_LIFETIME = 8000;
 const FOOD_STAGES = 5;
 const FOOD_STAGE_TIME = FOOD_LIFETIME / FOOD_STAGES;
 
-// Уровни
+// Режимы сложности
+const DIFFICULTY = {
+    IMMORTAL: 'immortal',  // Бессмертие: сквозь стены и хвост, макс = клетки
+    NORMAL: 'normal',      // Обычный: сквозь стены, смерть от хвоста
+    HARDCORE: 'hardcore'   // Хардкор: смерть от стен и хвоста
+};
+
+// Уровни (25 штук)
 const LEVELS = [
+    // 1-5: Простые
     { obstacles: [], speed: 150, name: "Пробуждение" },
     {
         obstacles: [
@@ -50,6 +58,7 @@ const LEVELS = [
         ],
         speed: 130, name: "Столбы"
     },
+    // 6-10: Средние
     {
         obstacles: [
             ...Array.from({ length: 7 }, (_, i) => ({ x: 9, y: 1 + i })),
@@ -66,7 +75,7 @@ const LEVELS = [
             ...Array.from({ length: 8 }, (_, i) => ({ x: 12, y: 8 + i })),
             ...Array.from({ length: 4 }, (_, i) => ({ x: 8 + i, y: 8 }))
         ],
-        speed: 115, name: "Спираль"
+        speed: 120, name: "Спираль"
     },
     {
         obstacles: [
@@ -81,7 +90,7 @@ const LEVELS = [
             { x: 9, y: 9 }, { x: 10, y: 9 },
             { x: 9, y: 10 }, { x: 10, y: 10 }
         ],
-        speed: 105, name: "Арена"
+        speed: 115, name: "Арена"
     },
     {
         obstacles: [
@@ -94,7 +103,7 @@ const LEVELS = [
             { x: 7, y: 9 }, { x: 7, y: 10 },
             { x: 12, y: 9 }, { x: 12, y: 10 }
         ],
-        speed: 95, name: "Хаос"
+        speed: 110, name: "Хаос"
     },
     {
         obstacles: [
@@ -111,6 +120,172 @@ const LEVELS = [
             { x: 7, y: 8 }, { x: 7, y: 9 }, { x: 7, y: 10 }, { x: 7, y: 11 },
             { x: 10, y: 8 }, { x: 10, y: 9 }, { x: 10, y: 10 }, { x: 10, y: 11 }
         ],
-        speed: 85, name: "Храм Уробороса"
+        speed: 105, name: "Храм Уробороса"
+    },
+    // 11-15: Сложные
+    {
+        obstacles: [
+            ...Array.from({ length: 18 }, (_, i) => ({ x: 1 + i, y: 5 })),
+            ...Array.from({ length: 18 }, (_, i) => ({ x: 1 + i, y: 14 })),
+            { x: 9, y: 9 }, { x: 10, y: 9 }, { x: 9, y: 10 }, { x: 10, y: 10 }
+        ],
+        speed: 100, name: "Тиски"
+    },
+    {
+        obstacles: [
+            ...Array.from({ length: 10 }, (_, i) => ({ x: 5 + i, y: 5 })),
+            ...Array.from({ length: 10 }, (_, i) => ({ x: 5 + i, y: 14 })),
+            ...Array.from({ length: 8 }, (_, i) => ({ x: 5, y: 6 + i })),
+            ...Array.from({ length: 8 }, (_, i) => ({ x: 14, y: 6 + i }))
+        ],
+        speed: 95, name: "Клетка"
+    },
+    {
+        obstacles: [
+            ...Array.from({ length: 16 }, (_, i) => ({ x: 2 + i, y: 9 })),
+            ...Array.from({ length: 16 }, (_, i) => ({ x: 2 + i, y: 10 })),
+        ],
+        speed: 90, name: "Раскол"
+    },
+    {
+        obstacles: [
+            ...Array.from({ length: 6 }, (_, i) => ({ x: 3, y: 3 + i })),
+            ...Array.from({ length: 6 }, (_, i) => ({ x: 16, y: 3 + i })),
+            ...Array.from({ length: 6 }, (_, i) => ({ x: 3, y: 11 + i })),
+            ...Array.from({ length: 6 }, (_, i) => ({ x: 16, y: 11 + i })),
+            ...Array.from({ length: 4 }, (_, i) => ({ x: 8 + i, y: 3 })),
+            ...Array.from({ length: 4 }, (_, i) => ({ x: 8 + i, y: 16 })),
+            { x: 7, y: 7 }, { x: 12, y: 7 }, { x: 7, y: 12 }, { x: 12, y: 12 }
+        ],
+        speed: 85, name: "Крест"
+    },
+    {
+        obstacles: [
+            ...Array.from({ length: 8 }, (_, i) => ({ x: 6 + i, y: 4 })),
+            ...Array.from({ length: 8 }, (_, i) => ({ x: 6 + i, y: 15 })),
+            ...Array.from({ length: 10 }, (_, i) => ({ x: 4, y: 5 + i })),
+            ...Array.from({ length: 10 }, (_, i) => ({ x: 15, y: 5 + i })),
+            { x: 9, y: 9 }, { x: 10, y: 9 }, { x: 9, y: 10 }, { x: 10, y: 10 }
+        ],
+        speed: 80, name: "Осада"
+    },
+    // 16-20: Очень сложные
+    {
+        obstacles: [
+            ...Array.from({ length: 3 }, (_, i) => ({ x: 4 + i * 4, y: 4 })),
+            ...Array.from({ length: 3 }, (_, i) => ({ x: 4 + i * 4, y: 5 })),
+            ...Array.from({ length: 3 }, (_, i) => ({ x: 4 + i * 4, y: 6 })),
+            ...Array.from({ length: 3 }, (_, i) => ({ x: 4 + i * 4, y: 13 })),
+            ...Array.from({ length: 3 }, (_, i) => ({ x: 4 + i * 4, y: 14 })),
+            ...Array.from({ length: 3 }, (_, i) => ({ x: 4 + i * 4, y: 15 })),
+        ],
+        speed: 78, name: "Башни"
+    },
+    {
+        obstacles: [
+            ...Array.from({ length: 14 }, (_, i) => ({ x: 3 + i, y: 3 })),
+            ...Array.from({ length: 14 }, (_, i) => ({ x: 3 + i, y: 16 })),
+            ...Array.from({ length: 12 }, (_, i) => ({ x: 3, y: 4 + i })),
+            ...Array.from({ length: 12 }, (_, i) => ({ x: 16, y: 4 + i })),
+            ...Array.from({ length: 6 }, (_, i) => ({ x: 7 + i, y: 7 })),
+            ...Array.from({ length: 6 }, (_, i) => ({ x: 7 + i, y: 12 })),
+        ],
+        speed: 75, name: "Лабиринт"
+    },
+    {
+        obstacles: [
+            ...Array.from({ length: 10 }, (_, i) => ({ x: i, y: i })),
+            ...Array.from({ length: 10 }, (_, i) => ({ x: 19 - i, y: i })),
+            ...Array.from({ length: 10 }, (_, i) => ({ x: i, y: 19 - i })),
+            ...Array.from({ length: 10 }, (_, i) => ({ x: 19 - i, y: 19 - i })),
+        ],
+        speed: 72, name: "Звезда"
+    },
+    {
+        obstacles: [
+            ...Array.from({ length: 5 }, (_, i) => ({ x: 2, y: 2 + i * 3 })),
+            ...Array.from({ length: 5 }, (_, i) => ({ x: 5, y: 4 + i * 3 })),
+            ...Array.from({ length: 5 }, (_, i) => ({ x: 8, y: 2 + i * 3 })),
+            ...Array.from({ length: 5 }, (_, i) => ({ x: 11, y: 4 + i * 3 })),
+            ...Array.from({ length: 5 }, (_, i) => ({ x: 14, y: 2 + i * 3 })),
+            ...Array.from({ length: 5 }, (_, i) => ({ x: 17, y: 4 + i * 3 })),
+        ],
+        speed: 70, name: "Пунктир"
+    },
+    {
+        obstacles: [
+            // Спираль из центра
+            { x: 9, y: 9 }, { x: 10, y: 9 }, { x: 10, y: 10 }, { x: 9, y: 10 },
+            ...Array.from({ length: 4 }, (_, i) => ({ x: 8 + i, y: 8 })),
+            ...Array.from({ length: 5 }, (_, i) => ({ x: 12, y: 8 + i })),
+            ...Array.from({ length: 5 }, (_, i) => ({ x: 7 + i, y: 12 })),
+            ...Array.from({ length: 6 }, (_, i) => ({ x: 7, y: 6 + i })),
+            ...Array.from({ length: 7 }, (_, i) => ({ x: 6 + i, y: 6 })),
+            ...Array.from({ length: 8 }, (_, i) => ({ x: 13, y: 5 + i })),
+        ],
+        speed: 68, name: "Водоворот"
+    },
+    // 21-25: Экстремальные
+    {
+        obstacles: [
+            ...Array.from({ length: 18 }, (_, i) => ({ x: 1 + i, y: 4 })),
+            ...Array.from({ length: 18 }, (_, i) => ({ x: 1 + i, y: 9 })),
+            ...Array.from({ length: 18 }, (_, i) => ({ x: 1 + i, y: 14 })),
+        ],
+        speed: 65, name: "Полосы"
+    },
+    {
+        obstacles: [
+            ...Array.from({ length: 16 }, (_, i) => ({ x: 2 + i, y: 2 })),
+            ...Array.from({ length: 16 }, (_, i) => ({ x: 2 + i, y: 17 })),
+            ...Array.from({ length: 14 }, (_, i) => ({ x: 2, y: 3 + i })),
+            ...Array.from({ length: 14 }, (_, i) => ({ x: 17, y: 3 + i })),
+            ...Array.from({ length: 8 }, (_, i) => ({ x: 6 + i, y: 6 })),
+            ...Array.from({ length: 8 }, (_, i) => ({ x: 6 + i, y: 13 })),
+            ...Array.from({ length: 6 }, (_, i) => ({ x: 6, y: 7 + i })),
+            ...Array.from({ length: 6 }, (_, i) => ({ x: 13, y: 7 + i })),
+        ],
+        speed: 62, name: "Крепость"
+    },
+    {
+        obstacles: [
+            // Множество островков
+            { x: 3, y: 3 }, { x: 4, y: 3 }, { x: 3, y: 4 },
+            { x: 15, y: 3 }, { x: 16, y: 3 }, { x: 16, y: 4 },
+            { x: 3, y: 15 }, { x: 3, y: 16 }, { x: 4, y: 16 },
+            { x: 16, y: 15 }, { x: 15, y: 16 }, { x: 16, y: 16 },
+            { x: 9, y: 3 }, { x: 10, y: 3 },
+            { x: 3, y: 9 }, { x: 3, y: 10 },
+            { x: 16, y: 9 }, { x: 16, y: 10 },
+            { x: 9, y: 16 }, { x: 10, y: 16 },
+            { x: 9, y: 9 }, { x: 10, y: 9 }, { x: 9, y: 10 }, { x: 10, y: 10 },
+            { x: 6, y: 6 }, { x: 13, y: 6 }, { x: 6, y: 13 }, { x: 13, y: 13 },
+        ],
+        speed: 60, name: "Острова"
+    },
+    {
+        obstacles: [
+            ...Array.from({ length: 8 }, (_, i) => ({ x: 2 + i * 2, y: 3 })),
+            ...Array.from({ length: 8 }, (_, i) => ({ x: 3 + i * 2, y: 6 })),
+            ...Array.from({ length: 8 }, (_, i) => ({ x: 2 + i * 2, y: 9 })),
+            ...Array.from({ length: 8 }, (_, i) => ({ x: 3 + i * 2, y: 12 })),
+            ...Array.from({ length: 8 }, (_, i) => ({ x: 2 + i * 2, y: 15 })),
+        ],
+        speed: 58, name: "Шахматы"
+    },
+    {
+        obstacles: [
+            // Финальный босс - сложный лабиринт
+            ...Array.from({ length: 18 }, (_, i) => ({ x: 1 + i, y: 1 })),
+            ...Array.from({ length: 18 }, (_, i) => ({ x: 1 + i, y: 18 })),
+            ...Array.from({ length: 16 }, (_, i) => ({ x: 1, y: 2 + i })),
+            ...Array.from({ length: 16 }, (_, i) => ({ x: 18, y: 2 + i })),
+            ...Array.from({ length: 6 }, (_, i) => ({ x: 4, y: 4 + i })),
+            ...Array.from({ length: 6 }, (_, i) => ({ x: 15, y: 10 + i })),
+            ...Array.from({ length: 8 }, (_, i) => ({ x: 6 + i, y: 7 })),
+            ...Array.from({ length: 8 }, (_, i) => ({ x: 6 + i, y: 12 })),
+            { x: 9, y: 9 }, { x: 10, y: 9 }, { x: 9, y: 10 }, { x: 10, y: 10 },
+        ],
+        speed: 55, name: "Финал Уробороса"
     }
 ];

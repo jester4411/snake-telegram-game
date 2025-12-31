@@ -16,6 +16,26 @@
                 <h1>УРОБОРОС</h1>
                 <p class="subtitle">Вечный змей</p>
             </div>
+
+            <!-- Выбор сложности -->
+            <div class="difficulty-selector">
+                <span class="difficulty-label">Сложность:</span>
+                <div class="difficulty-buttons">
+                    <button class="difficulty-btn" data-difficulty="immortal" title="Сквозь стены и хвост">
+                        <span class="diff-icon">🌿</span>
+                        <span class="diff-text">Бессмертие</span>
+                    </button>
+                    <button class="difficulty-btn active" data-difficulty="normal" title="Сквозь стены, смерть от хвоста">
+                        <span class="diff-icon">⚔️</span>
+                        <span class="diff-text">Обычный</span>
+                    </button>
+                    <button class="difficulty-btn" data-difficulty="hardcore" title="Смерть от стен и хвоста">
+                        <span class="diff-icon">💀</span>
+                        <span class="diff-text">Хардкор</span>
+                    </button>
+                </div>
+            </div>
+
             <div class="menu-buttons">
                 <button class="menu-btn" id="btn-survival">
                     <span class="btn-icon">♾️</span>
@@ -25,7 +45,7 @@
                 <button class="menu-btn" id="btn-levels">
                     <span class="btn-icon">🏛️</span>
                     <span class="btn-text">Уровни</span>
-                    <span class="btn-desc">10 испытаний</span>
+                    <span class="btn-desc">25 испытаний</span>
                 </button>
                 <button class="menu-btn secondary" id="btn-leaderboard">
                     <span class="btn-icon">🏆</span>
