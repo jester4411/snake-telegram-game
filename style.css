@@ -68,7 +68,8 @@ body {
     animation: fadeIn 0.3s ease;
 }
 
-.screen.hidden {
+.screen.hidden,
+.hidden {
     display: none !important;
 }
 
