@@ -1,5 +1,5 @@
 // ==========================================
-// 🐉 УРОБОРОС - Рендеринг
+// 🐉 УРОБОРОС - Рендеринг v2.7
 // ==========================================
 
 function draw() {
@@ -80,6 +80,26 @@ function drawObstacles(ctx, cellSize) {
         ctx.strokeStyle = '#6a6a9a';
         ctx.lineWidth = 1;
         ctx.stroke();
+    });
+}
+
+// Рисуем мини-превью уровня на кнопке
+function drawLevelPreview(canvas, levelIndex) {
+    const ctx = canvas.getContext('2d');
+    const level = LEVELS[levelIndex];
+    if (!level) return;
+
+    const size = canvas.width;
+    const cellSize = size / GRID_SIZE;
+
+    // Фон
+    ctx.fillStyle = '#1a1a2e';
+    ctx.fillRect(0, 0, size, size);
+
+    // Препятствия
+    ctx.fillStyle = '#6a6a9a';
+    level.obstacles.forEach(obs => {
+        ctx.fillRect(obs.x * cellSize, obs.y * cellSize, cellSize - 0.5, cellSize - 0.5);
     });
 }
 
@@ -292,12 +312,65 @@ function drawFoodGolden(ctx, cellSize) {
     }
 }
 
+// Получение цветовой схемы змейки по сложности
+function getSnakeColors() {
+    const difficulty = gameState.difficulty || DIFFICULTY.NORMAL;
+
+    if (difficulty === DIFFICULTY.IMMORTAL) {
+        // Зеленая змейка
+        return {
+            headLight: '#66ff66',
+            headMid: '#44dd44',
+            headDark: '#22aa22',
+            bodyBase: { r: 80, g: 200, b: 80 },
+            tailLight: '#55cc55',
+            tailMid: '#44aa44',
+            tailDark: '#338833',
+            eyePupil: ['#22aa22', '#116611', '#004400'],
+            neckLight: '#88ff88',
+            neckMid: '#66dd66',
+            neckDark: '#44aa44'
+        };
+    } else if (difficulty === DIFFICULTY.HARDCORE) {
+        // Красная змейка
+        return {
+            headLight: '#ff6666',
+            headMid: '#dd4444',
+            headDark: '#aa2222',
+            bodyBase: { r: 200, g: 80, b: 80 },
+            tailLight: '#cc5555',
+            tailMid: '#aa4444',
+            tailDark: '#883333',
+            eyePupil: ['#ffcc00', '#cc9900', '#996600'],
+            neckLight: '#ff8888',
+            neckMid: '#dd6666',
+            neckDark: '#aa4444'
+        };
+    } else {
+        // Золотая змейка (по умолчанию)
+        return {
+            headLight: '#ffe066',
+            headMid: '#ffd700',
+            headDark: '#cc9900',
+            bodyBase: { r: 255, g: 195, b: 45 },
+            tailLight: '#c9941a',
+            tailMid: '#a67c15',
+            tailDark: '#8b6914',
+            eyePupil: ['#ff6600', '#cc3300', '#660000'],
+            neckLight: '#ffe066',
+            neckMid: '#ffd700',
+            neckDark: '#cc9900'
+        };
+    }
+}
+
 function drawSnake(ctx, cellSize) {
     const snake = gameState.snake;
     const len = snake.length;
     if (len === 0) return;
 
     const dir = gameState.direction;
+    const colors = getSnakeColors();
 
     function getCoords(seg) {
         return {
@@ -311,11 +384,9 @@ function drawSnake(ctx, cellSize) {
         return cellSize * 0.8 * (1 - progress * 0.35);
     }
 
-    // Исправленная функция: используем distanceFromTail вместо segmentIndex
     function getBulgeScale(segIndex) {
         let scale = 1;
         for (const bulge of gameState.foodBulges) {
-            // Проверяем что bulge находится в пределах тела
             if (bulge.distanceFromTail >= 0 && bulge.distanceFromTail < len) {
                 const bulgeSegIndex = len - 1 - Math.floor(bulge.distanceFromTail);
                 if (bulgeSegIndex === segIndex) {
@@ -327,20 +398,26 @@ function drawSnake(ctx, cellSize) {
         return scale;
     }
 
+    // Цвет тела с учётом режима
     function getColor(progress) {
-        const r = Math.floor(255 - progress * 45);
-        const g = Math.floor(195 - progress * 55);
-        const b = Math.floor(45 - progress * 25);
-        return { r, g, b };
+        const base = colors.bodyBase;
+        const r = Math.floor(base.r - progress * 45);
+        const g = Math.floor(base.g - progress * 55);
+        const b = Math.floor(base.b - progress * 25);
+        return { r: Math.max(0, r), g: Math.max(0, g), b: Math.max(0, b) };
+    }
+
+    // Проверка телепортации между двумя сегментами
+    function isTeleport(i, j) {
+        return Math.abs(snake[i].x - snake[j].x) > 1 || Math.abs(snake[i].y - snake[j].y) > 1;
     }
 
     function isTurn(i) {
         if (i <= 0 || i >= len - 1) return false;
+        if (isTeleport(i, i + 1) || isTeleport(i, i - 1)) return false;
         const prev = snake[i + 1];
         const curr = snake[i];
         const next = snake[i - 1];
-        if (Math.abs(prev.x - curr.x) > 1 || Math.abs(prev.y - curr.y) > 1) return false;
-        if (Math.abs(curr.x - next.x) > 1 || Math.abs(curr.y - next.y) > 1) return false;
         const dx1 = curr.x - prev.x;
         const dy1 = curr.y - prev.y;
         const dx2 = next.x - curr.x;
@@ -348,9 +425,24 @@ function drawSnake(ctx, cellSize) {
         return dx1 !== dx2 || dy1 !== dy2;
     }
 
-    // Тень
+    // Находим реальный конец змейки (последний сегмент без телепортации)
+    function findRealTailIndex() {
+        for (let i = len - 1; i >= 1; i--) {
+            if (!isTeleport(i, i - 1)) {
+                return i;
+            }
+        }
+        return len - 1;
+    }
+
+    const realTailIdx = findRealTailIndex();
+
+    // Тень (пропускаем телепортирующие сегменты)
     ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
     for (let i = len - 1; i >= 0; i--) {
+        // Пропускаем если это не первый сегмент и есть телепорт к предыдущему
+        if (i < len - 1 && isTeleport(i, i + 1)) continue;
+
         const seg = getCoords(snake[i]);
         const w = getWidth(i) * getBulgeScale(i);
         ctx.beginPath();
@@ -360,6 +452,9 @@ function drawSnake(ctx, cellSize) {
 
     // Тело
     for (let i = len - 1; i >= 1; i--) {
+        // Пропускаем телепортацию
+        if (isTeleport(i, i - 1)) continue;
+
         const curr = getCoords(snake[i]);
         const next = getCoords(snake[i - 1]);
         const progress = i / Math.max(len - 1, 1);
@@ -368,8 +463,6 @@ function drawSnake(ctx, cellSize) {
         const w1 = getWidth(i) * bulge1;
         const w2 = getWidth(i - 1) * bulge2;
         const col = getColor(progress);
-
-        if (Math.abs(snake[i].x - snake[i - 1].x) > 1 || Math.abs(snake[i].y - snake[i - 1].y) > 1) continue;
 
         const angle = Math.atan2(next.y - curr.y, next.x - curr.x);
         const dist = Math.hypot(next.x - curr.x, next.y - curr.y);
@@ -382,7 +475,7 @@ function drawSnake(ctx, cellSize) {
         grad.addColorStop(0, `rgb(${col.r + 35}, ${col.g + 30}, ${col.b + 25})`);
         grad.addColorStop(0.25, `rgb(${col.r}, ${col.g}, ${col.b})`);
         grad.addColorStop(0.75, `rgb(${col.r}, ${col.g}, ${col.b})`);
-        grad.addColorStop(1, `rgb(${col.r - 35}, ${col.g - 35}, ${col.b - 15})`);
+        grad.addColorStop(1, `rgb(${Math.max(0, col.r - 35)}, ${Math.max(0, col.g - 35)}, ${Math.max(0, col.b - 15)})`);
 
         ctx.fillStyle = grad;
         ctx.beginPath();
@@ -407,7 +500,7 @@ function drawSnake(ctx, cellSize) {
             const jointGrad = ctx.createRadialGradient(seg.x, seg.y, 0, seg.x, seg.y, w / 2);
             jointGrad.addColorStop(0, `rgb(${col.r + 20}, ${col.g + 20}, ${col.b + 15})`);
             jointGrad.addColorStop(0.7, `rgb(${col.r}, ${col.g}, ${col.b})`);
-            jointGrad.addColorStop(1, `rgb(${col.r - 20}, ${col.g - 20}, ${col.b - 10})`);
+            jointGrad.addColorStop(1, `rgb(${Math.max(0, col.r - 20)}, ${Math.max(0, col.g - 20)}, ${Math.max(0, col.b - 10)})`);
 
             ctx.fillStyle = jointGrad;
             ctx.beginPath();
@@ -416,8 +509,11 @@ function drawSnake(ctx, cellSize) {
         }
     }
 
-    // Чешуйки
+    // Чешуйки (пропускаем телепортирующие сегменты)
     for (let i = len - 1; i >= 2; i--) {
+        // Пропускаем если этот сегмент телепортируется от предыдущего
+        if (i < len - 1 && isTeleport(i, i + 1)) continue;
+
         const seg = getCoords(snake[i]);
         const prev = i < len - 1 ? getCoords(snake[i + 1]) : seg;
         const progress = i / Math.max(len - 1, 1);
@@ -436,7 +532,7 @@ function drawSnake(ctx, cellSize) {
         const scaleGrad = ctx.createRadialGradient(0, 0, 0, 0, 0, scaleW);
         scaleGrad.addColorStop(0, `rgba(${col.r + 50}, ${col.g + 45}, ${col.b + 40}, 0.9)`);
         scaleGrad.addColorStop(0.6, `rgba(${col.r}, ${col.g}, ${col.b}, 0.8)`);
-        scaleGrad.addColorStop(1, `rgba(${col.r - 30}, ${col.g - 30}, ${col.b - 15}, 0.7)`);
+        scaleGrad.addColorStop(1, `rgba(${Math.max(0, col.r - 30)}, ${Math.max(0, col.g - 30)}, ${Math.max(0, col.b - 15)}, 0.7)`);
 
         ctx.fillStyle = scaleGrad;
         ctx.beginPath();
@@ -451,13 +547,13 @@ function drawSnake(ctx, cellSize) {
         ctx.restore();
     }
 
-    // Визуализация еды внутри тела (исправленная)
+    // Визуализация еды внутри тела
     for (const bulge of gameState.foodBulges) {
         if (bulge.distanceFromTail >= 0 && bulge.distanceFromTail < len - 1) {
             const segIdx = len - 1 - Math.floor(bulge.distanceFromTail);
             const nextIdx = segIdx + 1;
 
-            if (segIdx >= 0 && nextIdx < len) {
+            if (segIdx >= 0 && nextIdx < len && !isTeleport(segIdx, nextIdx)) {
                 const curr = getCoords(snake[segIdx]);
                 const next = getCoords(snake[nextIdx]);
                 const localProgress = bulge.distanceFromTail % 1;
@@ -479,46 +575,41 @@ function drawSnake(ctx, cellSize) {
         }
     }
 
-    // Хвост (с проверкой на телепортацию)
-    if (len > 1) {
-        const tailSeg = snake[len - 1];
-        const prevSeg = snake[len - 2];
+    // Хвост - рисуем только на реальном конце змейки
+    if (len > 1 && realTailIdx > 0 && !isTeleport(realTailIdx, realTailIdx - 1)) {
+        const tailSeg = snake[realTailIdx];
+        const prevSeg = snake[realTailIdx - 1];
 
-        // Пропускаем рендер хвоста при телепортации (разница в координатах > 1)
-        const isTeleporting = Math.abs(tailSeg.x - prevSeg.x) > 1 || Math.abs(tailSeg.y - prevSeg.y) > 1;
+        const tail = getCoords(tailSeg);
+        const prev = getCoords(prevSeg);
+        const tailW = getWidth(realTailIdx) * 0.7;
+        const angle = Math.atan2(tail.y - prev.y, tail.x - prev.x);
 
-        if (!isTeleporting) {
-            const tail = getCoords(tailSeg);
-            const prev = getCoords(prevSeg);
-            const tailW = getWidth(len - 1) * 0.7;
-            const angle = Math.atan2(tail.y - prev.y, tail.x - prev.x);
+        ctx.save();
+        ctx.translate(tail.x, tail.y);
+        ctx.rotate(angle);
 
-            ctx.save();
-            ctx.translate(tail.x, tail.y);
-            ctx.rotate(angle);
+        const tailGrad = ctx.createLinearGradient(-tailW, 0, tailW * 2, 0);
+        tailGrad.addColorStop(0, colors.tailLight);
+        tailGrad.addColorStop(0.5, colors.tailMid);
+        tailGrad.addColorStop(1, colors.tailDark);
 
-            const tailGrad = ctx.createLinearGradient(-tailW, 0, tailW * 2, 0);
-            tailGrad.addColorStop(0, '#c9941a');
-            tailGrad.addColorStop(0.5, '#a67c15');
-            tailGrad.addColorStop(1, '#8b6914');
+        ctx.fillStyle = tailGrad;
+        ctx.beginPath();
+        ctx.moveTo(-tailW, -tailW * 0.6);
+        ctx.quadraticCurveTo(tailW, -tailW * 0.3, tailW * 1.5, 0);
+        ctx.quadraticCurveTo(tailW, tailW * 0.3, -tailW, tailW * 0.6);
+        ctx.closePath();
+        ctx.fill();
 
-            ctx.fillStyle = tailGrad;
-            ctx.beginPath();
-            ctx.moveTo(-tailW, -tailW * 0.6);
-            ctx.quadraticCurveTo(tailW, -tailW * 0.3, tailW * 1.5, 0);
-            ctx.quadraticCurveTo(tailW, tailW * 0.3, -tailW, tailW * 0.6);
-            ctx.closePath();
-            ctx.fill();
-
-            ctx.restore();
-        }
+        ctx.restore();
     }
 
     // Голова
-    drawSnakeHead(ctx, cellSize, snake, dir);
+    drawSnakeHead(ctx, cellSize, snake, dir, colors);
 }
 
-function drawSnakeHead(ctx, cellSize, snake, dir) {
+function drawSnakeHead(ctx, cellSize, snake, dir, colors) {
     if (snake.length < 1) return;
 
     const head = snake[0];
@@ -554,9 +645,9 @@ function drawSnakeHead(ctx, cellSize, snake, dir) {
     // Шея
     if (snake.length > 1) {
         const neckGrad = ctx.createLinearGradient(0, -headW * 0.4, 0, headW * 0.4);
-        neckGrad.addColorStop(0, '#ffe066');
-        neckGrad.addColorStop(0.5, '#ffd700');
-        neckGrad.addColorStop(1, '#cc9900');
+        neckGrad.addColorStop(0, colors.neckLight);
+        neckGrad.addColorStop(0.5, colors.neckMid);
+        neckGrad.addColorStop(1, colors.neckDark);
         ctx.fillStyle = neckGrad;
         ctx.beginPath();
         ctx.arc(-headLen * 0.35, 0, headW * 0.4, 0, Math.PI * 2);
@@ -570,9 +661,9 @@ function drawSnakeHead(ctx, cellSize, snake, dir) {
         ctx.save();
         ctx.translate(0, -jawOffset * 0.5);
         const upperGrad = ctx.createLinearGradient(-headLen * 0.4, 0, headLen * 0.6, 0);
-        upperGrad.addColorStop(0, '#ffd700');
-        upperGrad.addColorStop(0.5, '#ffdb4d');
-        upperGrad.addColorStop(1, '#daa520');
+        upperGrad.addColorStop(0, colors.headMid);
+        upperGrad.addColorStop(0.5, colors.headLight);
+        upperGrad.addColorStop(1, colors.headDark);
         ctx.fillStyle = upperGrad;
         ctx.beginPath();
         ctx.moveTo(-headLen * 0.35, 0);
@@ -585,9 +676,9 @@ function drawSnakeHead(ctx, cellSize, snake, dir) {
         ctx.save();
         ctx.translate(0, jawOffset * 0.5);
         const lowerGrad = ctx.createLinearGradient(-headLen * 0.4, 0, headLen * 0.6, 0);
-        lowerGrad.addColorStop(0, '#e6c200');
-        lowerGrad.addColorStop(0.5, '#ffc800');
-        lowerGrad.addColorStop(1, '#cc9900');
+        lowerGrad.addColorStop(0, colors.headDark);
+        lowerGrad.addColorStop(0.5, colors.headMid);
+        lowerGrad.addColorStop(1, colors.headDark);
         ctx.fillStyle = lowerGrad;
         ctx.beginPath();
         ctx.moveTo(-headLen * 0.35, 0);
@@ -608,10 +699,10 @@ function drawSnakeHead(ctx, cellSize, snake, dir) {
         ctx.fill();
     } else {
         const headGrad = ctx.createLinearGradient(-headLen * 0.4, 0, headLen * 0.6, 0);
-        headGrad.addColorStop(0, '#ffd700');
-        headGrad.addColorStop(0.3, '#ffdb4d');
-        headGrad.addColorStop(0.6, '#ffc800');
-        headGrad.addColorStop(1, '#daa520');
+        headGrad.addColorStop(0, colors.headMid);
+        headGrad.addColorStop(0.3, colors.headLight);
+        headGrad.addColorStop(0.6, colors.headMid);
+        headGrad.addColorStop(1, colors.headDark);
 
         ctx.fillStyle = headGrad;
         ctx.beginPath();
@@ -629,8 +720,8 @@ function drawSnakeHead(ctx, cellSize, snake, dir) {
     ctx.ellipse(0, -headW * 0.15 - (isEating ? mouthOpen * headW * 0.3 : 0), headLen * 0.25, headW * 0.1, 0, 0, Math.PI * 2);
     ctx.fill();
 
-    // Чешуйки
-    ctx.fillStyle = 'rgba(218, 165, 32, 0.4)';
+    // Чешуйки на голове
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
     ctx.beginPath();
     ctx.ellipse(-headLen * 0.1, -headW * 0.1 - (isEating ? mouthOpen * headW * 0.2 : 0), headLen * 0.12, headLen * 0.08, -0.2, Math.PI, 0);
     ctx.fill();
@@ -645,7 +736,7 @@ function drawSnakeHead(ctx, cellSize, snake, dir) {
     const eyeOffset = isEating ? mouthOpen * headW * 0.3 : 0;
 
     [eyeY + eyeOffset, -eyeY - eyeOffset].forEach(y => {
-        ctx.fillStyle = '#4a3800';
+        ctx.fillStyle = '#2a2a2a';
         ctx.beginPath();
         ctx.ellipse(eyeX, y, eyeR + 1, eyeR * 0.85 + 1, 0, 0, Math.PI * 2);
         ctx.fill();
@@ -656,9 +747,9 @@ function drawSnakeHead(ctx, cellSize, snake, dir) {
         ctx.fill();
 
         const pupilGrad = ctx.createRadialGradient(eyeX, y, 0, eyeX, y, eyeR * 0.5);
-        pupilGrad.addColorStop(0, '#ff6600');
-        pupilGrad.addColorStop(0.5, '#cc3300');
-        pupilGrad.addColorStop(1, '#660000');
+        pupilGrad.addColorStop(0, colors.eyePupil[0]);
+        pupilGrad.addColorStop(0.5, colors.eyePupil[1]);
+        pupilGrad.addColorStop(1, colors.eyePupil[2]);
         ctx.fillStyle = pupilGrad;
         ctx.beginPath();
         ctx.ellipse(eyeX + 1, y, eyeR * 0.25, eyeR * 0.7, 0, 0, Math.PI * 2);
@@ -671,7 +762,7 @@ function drawSnakeHead(ctx, cellSize, snake, dir) {
     });
 
     // Ноздри
-    ctx.fillStyle = '#3d2b00';
+    ctx.fillStyle = '#2a2a2a';
     ctx.beginPath();
     ctx.ellipse(headLen * 0.4, -headW * 0.08 - eyeOffset * 0.5, 1.5, 2, 0, 0, Math.PI * 2);
     ctx.fill();

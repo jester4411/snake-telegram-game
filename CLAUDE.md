@@ -54,4 +54,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **Food System:** 5-stage fading timer (8 seconds total), respawns if not eaten.
 
-**Walls:** Wrap-around teleportation (no death on wall collision).
+**Walls:** Wrap-around teleportation (no death on wall collision) - depends on difficulty mode.
+
+**Level Previews:** Each level button shows a mini canvas preview of obstacles layout.
+
+**Leaderboards:** Separate records per difficulty mode (survival_immortal, survival_normal, etc.).

@@ -1,5 +1,5 @@
 // ==========================================
-// 🐉 УРОБОРОС - Мифическая змейка v2.6
+// 🐉 УРОБОРОС - Мифическая змейка v2.7
 // ==========================================
 
 const tg = window.Telegram?.WebApp;
@@ -33,7 +33,15 @@ let gameState = {
     foodBulges: [] // { distanceFromTail: number, progress: number }
 };
 
-let records = { survival: [], levels: [] };
+// Раздельный рейтинг по сложности
+let records = {
+    survival_immortal: [],
+    survival_normal: [],
+    survival_hardcore: [],
+    levels_immortal: [],
+    levels_normal: [],
+    levels_hardcore: []
+};
 let unlockedLevels = 1;
 const elements = {};
 
@@ -155,10 +163,25 @@ function generateLevelButtons() {
     for (let i = 1; i <= TOTAL_LEVELS; i++) {
         const btn = document.createElement('button');
         btn.className = 'level-btn';
-        btn.textContent = i;
+
+        // Создаём canvas для превью
+        const canvas = document.createElement('canvas');
+        canvas.width = 60;
+        canvas.height = 60;
+        canvas.className = 'level-preview';
+        drawLevelPreview(canvas, i - 1);
+        btn.appendChild(canvas);
+
+        // Номер уровня
+        const num = document.createElement('span');
+        num.className = 'level-num';
+        num.textContent = i;
+        btn.appendChild(num);
+
         if (i < unlockedLevels) btn.classList.add('completed');
         else if (i === unlockedLevels) btn.classList.add('current');
         else btn.disabled = true;
+
         btn.addEventListener('click', () => startLevelMode(i));
         elements.levelsGrid.appendChild(btn);
     }
@@ -173,12 +196,28 @@ function showLeaderboard(tab = 'survival') {
 }
 
 function renderLeaderboard(tab) {
-    const list = records[tab] || [];
+    const difficulty = gameState.difficulty || DIFFICULTY.NORMAL;
+    const key = `${tab}_${difficulty}`;
+    const list = records[key] || [];
+
+    // Показываем текущую сложность в заголовке
+    const diffNames = {
+        [DIFFICULTY.IMMORTAL]: '🌿 Бессмертие',
+        [DIFFICULTY.NORMAL]: '⚔️ Обычный',
+        [DIFFICULTY.HARDCORE]: '💀 Хардкор'
+    };
+
     if (list.length === 0) {
-        elements.leaderboardList.innerHTML = `<div class="empty-leaderboard"><p>🏆 Пока нет рекордов</p></div>`;
+        elements.leaderboardList.innerHTML = `<div class="empty-leaderboard">
+            <p class="diff-indicator">${diffNames[difficulty]}</p>
+            <p>🏆 Пока нет рекордов</p>
+        </div>`;
         return;
     }
-    elements.leaderboardList.innerHTML = list.map((record, index) => {
+
+    const headerHtml = `<div class="leaderboard-diff-header">${diffNames[difficulty]}</div>`;
+
+    elements.leaderboardList.innerHTML = headerHtml + list.map((record, index) => {
         const rankClass = index < 3 ? ['gold', 'silver', 'bronze'][index] : '';
         const date = new Date(record.date).toLocaleDateString('ru-RU');
         return `<div class="leaderboard-item ${rankClass}">
@@ -190,12 +229,18 @@ function renderLeaderboard(tab) {
 }
 
 function addRecord(mode, score, level = null) {
+    const difficulty = gameState.difficulty || DIFFICULTY.NORMAL;
+    const key = `${mode}_${difficulty}`;
+
+    // Инициализируем если нет
+    if (!records[key]) records[key] = [];
+
     const record = { score, date: Date.now(), level };
-    records[mode].push(record);
-    records[mode].sort((a, b) => b.score - a.score);
-    records[mode] = records[mode].slice(0, 10);
+    records[key].push(record);
+    records[key].sort((a, b) => b.score - a.score);
+    records[key] = records[key].slice(0, 10);
     saveData();
-    return records[mode][0].date === record.date;
+    return records[key][0].date === record.date;
 }
 
 // ==========================================
