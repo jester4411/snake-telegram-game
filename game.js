@@ -237,7 +237,7 @@ function loadData() {
 
         const savedLevels = localStorage.getItem('ouroborosUnlockedLevels');
         if (savedLevels) {
-            unlockedLevels = parseInt(savedLevels);
+            unlockedLevels = Math.min(Math.max(1, parseInt(savedLevels)), TOTAL_LEVELS);
         }
     } catch (e) {
         console.error('Ошибка загрузки данных:', e);
@@ -362,6 +362,7 @@ function addRecord(mode, score, level = null) {
 
 function startSurvivalMode() {
     gameState.mode = 'survival';
+    gameState.currentLevel = 0; // Сброс уровня для режима выживания
     gameState.obstacles = [];
     gameState.speed = INITIAL_SPEED;
 
@@ -575,7 +576,7 @@ function levelComplete() {
     }
 
     // Проверяем, все ли уровни пройдены
-    if (gameState.currentLevel >= TOTAL_LEVELS) {
+    if (gameState.currentLevel === TOTAL_LEVELS) {
         elements.totalScore.textContent = gameState.totalScore;
         addRecord('levels', gameState.totalScore, TOTAL_LEVELS);
         elements.gameComplete.classList.remove('hidden');
