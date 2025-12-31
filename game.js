@@ -219,7 +219,10 @@ function resizeCanvas() {
     const container = document.getElementById('game-container');
     if (!container) return;
 
-    const size = Math.min(container.clientWidth, container.clientHeight) - 4;
+    // Получаем реальные размеры контейнера
+    const rect = container.getBoundingClientRect();
+    const size = Math.floor(Math.min(rect.width, rect.height));
+
     if (size > 0) {
         elements.canvas.width = size;
         elements.canvas.height = size;
