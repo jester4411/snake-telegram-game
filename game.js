@@ -16,7 +16,7 @@ const TOTAL_LEVELS = 10;
 const POINTS_PER_LEVEL = 10;
 
 // Настройки еды
-const FOOD_LIFETIME = 12000; // 12 секунд жизни еды
+const FOOD_LIFETIME = 8000; // 8 секунд жизни еды
 const FOOD_STAGES = 5; // 5 этапов угасания
 const FOOD_STAGE_TIME = FOOD_LIFETIME / FOOD_STAGES;
 
@@ -728,118 +728,276 @@ function drawFood(ctx, cellSize) {
 }
 
 function drawSnake(ctx, cellSize) {
-    const len = gameState.snake.length;
+    const snake = gameState.snake;
+    const len = snake.length;
+    if (len === 0) return;
 
-    // Рисуем от хвоста к голове для правильного перекрытия
-    for (let i = len - 1; i >= 0; i--) {
-        const segment = gameState.snake[i];
-        const x = segment.x * cellSize + cellSize / 2;
-        const y = segment.y * cellSize + cellSize / 2;
+    const dir = gameState.direction;
+
+    // Получаем координаты с учётом телепортации
+    function getCoords(seg) {
+        return {
+            x: seg.x * cellSize + cellSize / 2,
+            y: seg.y * cellSize + cellSize / 2
+        };
+    }
+
+    // Толщина тела (плавное сужение к хвосту)
+    function getWidth(i) {
         const progress = i / Math.max(len - 1, 1);
+        const baseWidth = cellSize * 0.85;
+        return baseWidth * (1 - progress * 0.4);
+    }
 
-        // Размер сегмента (голова больше)
-        const sizeMult = i === 0 ? 0.9 : (0.75 - progress * 0.15);
-        const radius = (cellSize / 2) * sizeMult;
+    // === ТЕНЬ ЗМЕЙКИ ===
+    ctx.save();
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.25)';
+    for (let i = len - 1; i >= 0; i--) {
+        const seg = getCoords(snake[i]);
+        const w = getWidth(i);
+        ctx.beginPath();
+        ctx.ellipse(seg.x + 3, seg.y + 4, w / 2, w / 2 * 0.7, 0, 0, Math.PI * 2);
+        ctx.fill();
+    }
+    ctx.restore();
 
-        // Золотой цвет с затемнением к хвосту
-        const goldR = Math.floor(255 - progress * 60);
-        const goldG = Math.floor(200 - progress * 70);
+    // === ТЕЛО ЗМЕЙКИ (сплошное) ===
+    // Рисуем соединения между сегментами
+    for (let i = len - 1; i >= 1; i--) {
+        const curr = getCoords(snake[i]);
+        const next = getCoords(snake[i - 1]);
+        const progress = i / Math.max(len - 1, 1);
+        const w1 = getWidth(i);
+        const w2 = getWidth(i - 1);
+
+        // Пропускаем телепортационные разрывы
+        const dx = Math.abs(snake[i].x - snake[i - 1].x);
+        const dy = Math.abs(snake[i].y - snake[i - 1].y);
+        if (dx > 1 || dy > 1) continue;
+
+        // Золотой градиент для соединения
+        const goldR = Math.floor(255 - progress * 50);
+        const goldG = Math.floor(200 - progress * 60);
         const goldB = Math.floor(50 - progress * 30);
 
-        // Тень под сегментом
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+        // Рисуем прямоугольник-соединение
+        const angle = Math.atan2(next.y - curr.y, next.x - curr.x);
+        const dist = Math.sqrt((next.x - curr.x) ** 2 + (next.y - curr.y) ** 2);
+
+        ctx.save();
+        ctx.translate(curr.x, curr.y);
+        ctx.rotate(angle);
+
+        const bodyGrad = ctx.createLinearGradient(0, -w1 / 2, 0, w1 / 2);
+        bodyGrad.addColorStop(0, `rgb(${Math.min(255, goldR + 40)}, ${Math.min(255, goldG + 30)}, ${goldB + 20})`);
+        bodyGrad.addColorStop(0.3, `rgb(${goldR}, ${goldG}, ${goldB})`);
+        bodyGrad.addColorStop(0.7, `rgb(${goldR}, ${goldG}, ${goldB})`);
+        bodyGrad.addColorStop(1, `rgb(${Math.max(0, goldR - 40)}, ${Math.max(0, goldG - 40)}, ${Math.max(0, goldB - 15)})`);
+
+        ctx.fillStyle = bodyGrad;
         ctx.beginPath();
-        ctx.ellipse(x + 2, y + 3, radius, radius * 0.7, 0, 0, Math.PI * 2);
+        ctx.moveTo(-w1 / 4, -w1 / 2);
+        ctx.lineTo(dist + w2 / 4, -w2 / 2);
+        ctx.lineTo(dist + w2 / 4, w2 / 2);
+        ctx.lineTo(-w1 / 4, w1 / 2);
+        ctx.closePath();
         ctx.fill();
 
-        // 3D градиент для сегмента
-        const segGrad = ctx.createRadialGradient(
-            x - radius * 0.3, y - radius * 0.3, 0,
-            x, y, radius
+        ctx.restore();
+    }
+
+    // Рисуем круглые сегменты поверх соединений
+    for (let i = len - 1; i >= 3; i--) {
+        const seg = getCoords(snake[i]);
+        const progress = i / Math.max(len - 1, 1);
+        const w = getWidth(i);
+
+        const goldR = Math.floor(255 - progress * 50);
+        const goldG = Math.floor(200 - progress * 60);
+        const goldB = Math.floor(50 - progress * 30);
+
+        // 3D градиент
+        const grad = ctx.createRadialGradient(
+            seg.x - w * 0.2, seg.y - w * 0.2, 0,
+            seg.x, seg.y, w / 2
         );
-        segGrad.addColorStop(0, `rgb(${Math.min(255, goldR + 50)}, ${Math.min(255, goldG + 40)}, ${goldB + 30})`);
-        segGrad.addColorStop(0.5, `rgb(${goldR}, ${goldG}, ${goldB})`);
-        segGrad.addColorStop(1, `rgb(${Math.max(0, goldR - 60)}, ${Math.max(0, goldG - 50)}, ${Math.max(0, goldB - 20)})`);
+        grad.addColorStop(0, `rgb(${Math.min(255, goldR + 50)}, ${Math.min(255, goldG + 40)}, ${goldB + 30})`);
+        grad.addColorStop(0.5, `rgb(${goldR}, ${goldG}, ${goldB})`);
+        grad.addColorStop(1, `rgb(${Math.max(0, goldR - 50)}, ${Math.max(0, goldG - 45)}, ${Math.max(0, goldB - 20)})`);
 
-        ctx.fillStyle = segGrad;
+        ctx.fillStyle = grad;
         ctx.beginPath();
-        ctx.arc(x, y, radius, 0, Math.PI * 2);
+        ctx.arc(seg.x, seg.y, w / 2, 0, Math.PI * 2);
         ctx.fill();
 
-        // Блик
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
-        ctx.beginPath();
-        ctx.ellipse(x - radius * 0.3, y - radius * 0.3, radius * 0.4, radius * 0.25, -Math.PI / 4, 0, Math.PI * 2);
-        ctx.fill();
-
-        // Чешуйчатый узор (каждый 2-й сегмент)
-        if (i > 0 && i % 2 === 0) {
-            ctx.strokeStyle = `rgba(255, 255, 255, ${0.15 - progress * 0.1})`;
-            ctx.lineWidth = 1;
+        // Чешуйки (каждый 3-й сегмент)
+        if (i % 3 === 0) {
+            ctx.fillStyle = `rgba(255, 255, 200, ${0.15 - progress * 0.1})`;
             ctx.beginPath();
-            ctx.arc(x, y, radius * 0.5, 0, Math.PI * 2);
-            ctx.stroke();
-        }
-
-        // Глаза на голове
-        if (i === 0) {
-            drawEyes(ctx, x, y, radius * 0.8, cellSize);
+            ctx.ellipse(seg.x, seg.y - w * 0.15, w * 0.3, w * 0.2, 0, 0, Math.PI * 2);
+            ctx.fill();
         }
     }
+
+    // === ГОЛОВА ЗМЕЙКИ (3 клетки) ===
+    drawSnakeHead(ctx, cellSize, snake, dir);
 }
 
-function drawEyes(ctx, hx, hy, headRadius) {
-    const dir = gameState.direction;
-    const eyeRadius = headRadius * 0.35;
-    const eyeOffset = headRadius * 0.5;
-    const pupilRadius = eyeRadius * 0.5;
+function drawSnakeHead(ctx, cellSize, snake, dir) {
+    if (snake.length < 1) return;
 
-    // Позиции глаз
-    let e1x, e1y, e2x, e2y;
-    if (dir.x === 1) { // Вправо
-        e1x = hx + eyeOffset * 0.6; e1y = hy - eyeOffset * 0.5;
-        e2x = hx + eyeOffset * 0.6; e2y = hy + eyeOffset * 0.5;
-    } else if (dir.x === -1) { // Влево
-        e1x = hx - eyeOffset * 0.6; e1y = hy - eyeOffset * 0.5;
-        e2x = hx - eyeOffset * 0.6; e2y = hy + eyeOffset * 0.5;
-    } else if (dir.y === -1) { // Вверх
-        e1x = hx - eyeOffset * 0.5; e1y = hy - eyeOffset * 0.6;
-        e2x = hx + eyeOffset * 0.5; e2y = hy - eyeOffset * 0.6;
-    } else { // Вниз
-        e1x = hx - eyeOffset * 0.5; e1y = hy + eyeOffset * 0.6;
-        e2x = hx + eyeOffset * 0.5; e2y = hy + eyeOffset * 0.6;
+    const head = snake[0];
+    const hx = head.x * cellSize + cellSize / 2;
+    const hy = head.y * cellSize + cellSize / 2;
+
+    // Размеры головы (3 клетки в длину)
+    const headLength = cellSize * 2.2;
+    const headWidth = cellSize * 1.1;
+    const neckWidth = cellSize * 0.8;
+
+    // Угол направления
+    let angle = 0;
+    if (dir.x === 1) angle = 0;
+    else if (dir.x === -1) angle = Math.PI;
+    else if (dir.y === -1) angle = -Math.PI / 2;
+    else angle = Math.PI / 2;
+
+    ctx.save();
+    ctx.translate(hx, hy);
+    ctx.rotate(angle);
+
+    // Тень головы
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+    ctx.beginPath();
+    ctx.ellipse(3, 4, headLength / 2, headWidth / 2 * 0.7, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Шея (соединение с телом)
+    if (snake.length > 1) {
+        const neckGrad = ctx.createLinearGradient(0, -neckWidth / 2, 0, neckWidth / 2);
+        neckGrad.addColorStop(0, '#ffe066');
+        neckGrad.addColorStop(0.5, '#ffd700');
+        neckGrad.addColorStop(1, '#cc9900');
+        ctx.fillStyle = neckGrad;
+        ctx.beginPath();
+        ctx.ellipse(-headLength / 3, 0, neckWidth / 2, neckWidth / 2, 0, 0, Math.PI * 2);
+        ctx.fill();
     }
 
-    // Белки глаз с градиентом
-    [{ x: e1x, y: e1y }, { x: e2x, y: e2y }].forEach(eye => {
-        const eyeGrad = ctx.createRadialGradient(eye.x, eye.y, 0, eye.x, eye.y, eyeRadius);
+    // Основа головы - каплевидная форма
+    const headGrad = ctx.createRadialGradient(
+        -headLength * 0.1, -headWidth * 0.15, 0,
+        0, 0, headLength / 1.5
+    );
+    headGrad.addColorStop(0, '#fff5b3');
+    headGrad.addColorStop(0.2, '#ffe066');
+    headGrad.addColorStop(0.5, '#ffd700');
+    headGrad.addColorStop(0.8, '#daa520');
+    headGrad.addColorStop(1, '#b8860b');
+
+    ctx.fillStyle = headGrad;
+    ctx.beginPath();
+    // Каплевидная форма головы
+    ctx.moveTo(-headLength / 3, 0);
+    ctx.bezierCurveTo(
+        -headLength / 4, -headWidth / 2,
+        headLength / 3, -headWidth / 2.5,
+        headLength / 2.2, 0
+    );
+    ctx.bezierCurveTo(
+        headLength / 3, headWidth / 2.5,
+        -headLength / 4, headWidth / 2,
+        -headLength / 3, 0
+    );
+    ctx.fill();
+
+    // Верхний блик
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.35)';
+    ctx.beginPath();
+    ctx.ellipse(0, -headWidth * 0.2, headLength * 0.35, headWidth * 0.15, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Чешуйки на голове
+    ctx.fillStyle = 'rgba(255, 200, 50, 0.3)';
+    for (let i = 0; i < 3; i++) {
+        ctx.beginPath();
+        ctx.ellipse(-headLength * 0.1 + i * headLength * 0.12, -headWidth * 0.05, headLength * 0.08, headLength * 0.06, 0, 0, Math.PI * 2);
+        ctx.fill();
+    }
+
+    // Ноздри
+    ctx.fillStyle = '#4a3000';
+    ctx.beginPath();
+    ctx.ellipse(headLength * 0.35, -headWidth * 0.12, 2, 3, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.ellipse(headLength * 0.35, headWidth * 0.12, 2, 3, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // === ГЛАЗА ===
+    const eyeOffsetX = headLength * 0.05;
+    const eyeOffsetY = headWidth * 0.28;
+    const eyeRadius = headWidth * 0.2;
+    const pupilRadius = eyeRadius * 0.55;
+
+    // Глаза
+    [{ y: -eyeOffsetY }, { y: eyeOffsetY }].forEach(eye => {
+        // Белок глаза
+        const eyeGrad = ctx.createRadialGradient(eyeOffsetX, eye.y, 0, eyeOffsetX, eye.y, eyeRadius);
         eyeGrad.addColorStop(0, '#ffffff');
-        eyeGrad.addColorStop(0.7, '#f0f0f0');
-        eyeGrad.addColorStop(1, '#d0d0d0');
+        eyeGrad.addColorStop(0.6, '#f8f8f0');
+        eyeGrad.addColorStop(1, '#e8e0d0');
         ctx.fillStyle = eyeGrad;
         ctx.beginPath();
-        ctx.arc(eye.x, eye.y, eyeRadius, 0, Math.PI * 2);
+        ctx.ellipse(eyeOffsetX, eye.y, eyeRadius, eyeRadius * 0.9, 0, 0, Math.PI * 2);
         ctx.fill();
 
-        // Зрачки (рубиновые)
+        // Обводка глаза
+        ctx.strokeStyle = '#8b7500';
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+
+        // Зрачок (рубиновый вертикальный)
         const pupilGrad = ctx.createRadialGradient(
-            eye.x + dir.x * 2, eye.y + dir.y * 2, 0,
-            eye.x + dir.x * 2, eye.y + dir.y * 2, pupilRadius
+            eyeOffsetX + 2, eye.y, 0,
+            eyeOffsetX + 2, eye.y, pupilRadius
         );
-        pupilGrad.addColorStop(0, '#ff2020');
-        pupilGrad.addColorStop(0.5, '#cc0000');
-        pupilGrad.addColorStop(1, '#800000');
+        pupilGrad.addColorStop(0, '#ff3030');
+        pupilGrad.addColorStop(0.4, '#dd0000');
+        pupilGrad.addColorStop(1, '#660000');
         ctx.fillStyle = pupilGrad;
         ctx.beginPath();
-        ctx.arc(eye.x + dir.x * 2, eye.y + dir.y * 2, pupilRadius, 0, Math.PI * 2);
+        ctx.ellipse(eyeOffsetX + 2, eye.y, pupilRadius * 0.4, pupilRadius, 0, 0, Math.PI * 2);
         ctx.fill();
 
         // Блик в глазу
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
         ctx.beginPath();
-        ctx.arc(eye.x - pupilRadius * 0.3, eye.y - pupilRadius * 0.3, pupilRadius * 0.4, 0, Math.PI * 2);
+        ctx.arc(eyeOffsetX - eyeRadius * 0.3, eye.y - eyeRadius * 0.3, pupilRadius * 0.35, 0, Math.PI * 2);
         ctx.fill();
     });
+
+    // Язык (иногда высовывается)
+    if (Math.sin(gameState.time * 3) > 0.3) {
+        const tongueLength = headLength * 0.4 + Math.sin(gameState.time * 8) * 5;
+        ctx.strokeStyle = '#ff4060';
+        ctx.lineWidth = 2;
+        ctx.lineCap = 'round';
+
+        // Раздвоенный язык
+        ctx.beginPath();
+        ctx.moveTo(headLength / 2.2, 0);
+        ctx.lineTo(headLength / 2.2 + tongueLength * 0.7, 0);
+        ctx.lineTo(headLength / 2.2 + tongueLength, -4);
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(headLength / 2.2 + tongueLength * 0.7, 0);
+        ctx.lineTo(headLength / 2.2 + tongueLength, 4);
+        ctx.stroke();
+    }
+
+    ctx.restore();
 }
 
 // ==========================================
@@ -906,20 +1064,36 @@ function setDirection(x, y) {
 
 function setupSwipeControls() {
     let startX = 0, startY = 0;
-    elements.canvas.addEventListener('touchstart', e => {
+    let isSwiping = false;
+
+    // Свайпы работают по всему экрану
+    document.addEventListener('touchstart', e => {
         startX = e.touches[0].clientX;
         startY = e.touches[0].clientY;
+        isSwiping = true;
     }, { passive: true });
 
-    elements.canvas.addEventListener('touchend', e => {
-        if (!gameState.isPlaying || gameState.isPaused) return;
-        const dx = e.changedTouches[0].clientX - startX;
-        const dy = e.changedTouches[0].clientY - startY;
-        if (Math.abs(dx) > Math.abs(dy)) {
-            if (Math.abs(dx) > 30) setDirection(dx > 0 ? 1 : -1, 0);
-        } else {
-            if (Math.abs(dy) > 30) setDirection(0, dy > 0 ? 1 : -1);
+    document.addEventListener('touchmove', e => {
+        if (!isSwiping || !gameState.isPlaying || gameState.isPaused) return;
+
+        const dx = e.touches[0].clientX - startX;
+        const dy = e.touches[0].clientY - startY;
+        const minSwipe = 25; // Минимальная длина свайпа
+
+        if (Math.abs(dx) > minSwipe || Math.abs(dy) > minSwipe) {
+            if (Math.abs(dx) > Math.abs(dy)) {
+                setDirection(dx > 0 ? 1 : -1, 0);
+            } else {
+                setDirection(0, dy > 0 ? 1 : -1);
+            }
+            // Обновляем начальную точку для непрерывного управления
+            startX = e.touches[0].clientX;
+            startY = e.touches[0].clientY;
         }
+    }, { passive: true });
+
+    document.addEventListener('touchend', () => {
+        isSwiping = false;
     }, { passive: true });
 }
 
