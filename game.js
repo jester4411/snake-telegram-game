@@ -183,7 +183,20 @@ const elements = {};
 
 function init() {
     cacheElements();
-    if (tg) { tg.ready(); tg.expand(); }
+    if (tg) {
+        tg.ready();
+        tg.expand();
+        // Отключаем вертикальные свайпы Telegram (закрытие/сворачивание)
+        if (tg.disableVerticalSwipes) {
+            tg.disableVerticalSwipes();
+        }
+    }
+    // Блокируем скролл на уровне CSS
+    document.body.style.touchAction = 'none';
+    document.body.style.overscrollBehavior = 'none';
+    document.documentElement.style.touchAction = 'none';
+    document.documentElement.style.overscrollBehavior = 'none';
+
     loadData();
     setupCanvas();
     setupEventListeners();
@@ -734,7 +747,7 @@ function drawSnake(ctx, cellSize) {
 
     const dir = gameState.direction;
 
-    // Получаем координаты с учётом телепортации
+    // Координаты сегмента
     function getCoords(seg) {
         return {
             x: seg.x * cellSize + cellSize / 2,
@@ -742,88 +755,137 @@ function drawSnake(ctx, cellSize) {
         };
     }
 
-    // Толщина тела (плавное сужение к хвосту)
+    // Ширина тела (сужается к хвосту)
     function getWidth(i) {
         const progress = i / Math.max(len - 1, 1);
-        const baseWidth = cellSize * 0.85;
-        return baseWidth * (1 - progress * 0.4);
+        return cellSize * 0.8 * (1 - progress * 0.35);
     }
 
-    // === ТЕНЬ ЗМЕЙКИ ===
-    ctx.save();
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.25)';
+    // Цвет сегмента (золотой градиент к хвосту)
+    function getColor(progress) {
+        const r = Math.floor(255 - progress * 45);
+        const g = Math.floor(195 - progress * 55);
+        const b = Math.floor(45 - progress * 25);
+        return { r, g, b };
+    }
+
+    // === ТЕНЬ ===
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
     for (let i = len - 1; i >= 0; i--) {
         const seg = getCoords(snake[i]);
         const w = getWidth(i);
         ctx.beginPath();
-        ctx.ellipse(seg.x + 3, seg.y + 4, w / 2, w / 2 * 0.7, 0, 0, Math.PI * 2);
+        ctx.ellipse(seg.x + 2, seg.y + 3, w / 2, w / 2 * 0.6, 0, 0, Math.PI * 2);
         ctx.fill();
     }
-    ctx.restore();
 
-    // === ТЕЛО ЗМЕЙКИ (сплошное) ===
-    // Рисуем соединения между сегментами
+    // === ТЕЛО С ЧЕШУЁЙ ===
+    // Сначала рисуем основу тела (соединения)
     for (let i = len - 1; i >= 1; i--) {
         const curr = getCoords(snake[i]);
         const next = getCoords(snake[i - 1]);
         const progress = i / Math.max(len - 1, 1);
         const w1 = getWidth(i);
         const w2 = getWidth(i - 1);
+        const col = getColor(progress);
 
-        // Пропускаем телепортационные разрывы
-        const dx = Math.abs(snake[i].x - snake[i - 1].x);
-        const dy = Math.abs(snake[i].y - snake[i - 1].y);
-        if (dx > 1 || dy > 1) continue;
+        // Пропускаем телепортацию
+        if (Math.abs(snake[i].x - snake[i - 1].x) > 1 || Math.abs(snake[i].y - snake[i - 1].y) > 1) continue;
 
-        // Золотой градиент для соединения
-        const goldR = Math.floor(255 - progress * 50);
-        const goldG = Math.floor(200 - progress * 60);
-        const goldB = Math.floor(50 - progress * 30);
-
-        // Рисуем прямоугольник-соединение
         const angle = Math.atan2(next.y - curr.y, next.x - curr.x);
-        const dist = Math.sqrt((next.x - curr.x) ** 2 + (next.y - curr.y) ** 2);
+        const dist = Math.hypot(next.x - curr.x, next.y - curr.y);
 
         ctx.save();
         ctx.translate(curr.x, curr.y);
         ctx.rotate(angle);
 
-        const bodyGrad = ctx.createLinearGradient(0, -w1 / 2, 0, w1 / 2);
-        bodyGrad.addColorStop(0, `rgb(${Math.min(255, goldR + 40)}, ${Math.min(255, goldG + 30)}, ${goldB + 20})`);
-        bodyGrad.addColorStop(0.3, `rgb(${goldR}, ${goldG}, ${goldB})`);
-        bodyGrad.addColorStop(0.7, `rgb(${goldR}, ${goldG}, ${goldB})`);
-        bodyGrad.addColorStop(1, `rgb(${Math.max(0, goldR - 40)}, ${Math.max(0, goldG - 40)}, ${Math.max(0, goldB - 15)})`);
+        // Градиент тела (3D эффект)
+        const grad = ctx.createLinearGradient(0, -w1 / 2, 0, w1 / 2);
+        grad.addColorStop(0, `rgb(${col.r + 35}, ${col.g + 30}, ${col.b + 25})`);
+        grad.addColorStop(0.25, `rgb(${col.r}, ${col.g}, ${col.b})`);
+        grad.addColorStop(0.75, `rgb(${col.r}, ${col.g}, ${col.b})`);
+        grad.addColorStop(1, `rgb(${col.r - 35}, ${col.g - 35}, ${col.b - 15})`);
 
-        ctx.fillStyle = bodyGrad;
+        ctx.fillStyle = grad;
         ctx.beginPath();
-        ctx.moveTo(-w1 / 4, -w1 / 2);
-        ctx.lineTo(dist + w2 / 4, -w2 / 2);
-        ctx.lineTo(dist + w2 / 4, w2 / 2);
-        ctx.lineTo(-w1 / 4, w1 / 2);
+        ctx.moveTo(0, -w1 / 2);
+        ctx.lineTo(dist, -w2 / 2);
+        ctx.lineTo(dist, w2 / 2);
+        ctx.lineTo(0, w1 / 2);
         ctx.closePath();
         ctx.fill();
 
         ctx.restore();
     }
 
-    // Кончик хвоста (округлённый)
-    if (len > 1) {
-        const tail = getCoords(snake[len - 1]);
-        const tailW = getWidth(len - 1);
-        const tailGrad = ctx.createRadialGradient(
-            tail.x - tailW * 0.2, tail.y - tailW * 0.2, 0,
-            tail.x, tail.y, tailW / 2
-        );
-        tailGrad.addColorStop(0, '#d4a520');
-        tailGrad.addColorStop(0.5, '#b8860b');
-        tailGrad.addColorStop(1, '#8b6914');
-        ctx.fillStyle = tailGrad;
+    // === ЧЕШУЙКИ (поверх тела) ===
+    for (let i = len - 1; i >= 2; i--) {
+        const seg = getCoords(snake[i]);
+        const prev = i < len - 1 ? getCoords(snake[i + 1]) : seg;
+        const progress = i / Math.max(len - 1, 1);
+        const w = getWidth(i);
+        const col = getColor(progress);
+
+        // Направление сегмента
+        const angle = Math.atan2(seg.y - prev.y, seg.x - prev.x);
+
+        ctx.save();
+        ctx.translate(seg.x, seg.y);
+        ctx.rotate(angle);
+
+        // Чешуйка - полукруг с градиентом
+        const scaleW = w * 0.6;
+        const scaleH = w * 0.35;
+
+        // Основа чешуйки
+        const scaleGrad = ctx.createRadialGradient(0, 0, 0, 0, 0, scaleW);
+        scaleGrad.addColorStop(0, `rgba(${col.r + 50}, ${col.g + 45}, ${col.b + 40}, 0.9)`);
+        scaleGrad.addColorStop(0.6, `rgba(${col.r}, ${col.g}, ${col.b}, 0.8)`);
+        scaleGrad.addColorStop(1, `rgba(${col.r - 30}, ${col.g - 30}, ${col.b - 15}, 0.7)`);
+
+        ctx.fillStyle = scaleGrad;
         ctx.beginPath();
-        ctx.arc(tail.x, tail.y, tailW / 2, 0, Math.PI * 2);
+        ctx.ellipse(0, 0, scaleW, scaleH, 0, Math.PI, 0);
         ctx.fill();
+
+        // Блик на чешуйке
+        ctx.fillStyle = `rgba(255, 255, 200, ${0.25 - progress * 0.15})`;
+        ctx.beginPath();
+        ctx.ellipse(-scaleW * 0.2, -scaleH * 0.3, scaleW * 0.25, scaleH * 0.3, -0.3, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.restore();
     }
 
-    // === ГОЛОВА ЗМЕЙКИ (2 клетки) ===
+    // === ХВОСТ ===
+    if (len > 1) {
+        const tail = getCoords(snake[len - 1]);
+        const prev = getCoords(snake[len - 2]);
+        const tailW = getWidth(len - 1) * 0.7;
+        const angle = Math.atan2(tail.y - prev.y, tail.x - prev.x);
+
+        ctx.save();
+        ctx.translate(tail.x, tail.y);
+        ctx.rotate(angle);
+
+        // Заострённый хвост
+        const tailGrad = ctx.createLinearGradient(-tailW, 0, tailW * 2, 0);
+        tailGrad.addColorStop(0, '#c9941a');
+        tailGrad.addColorStop(0.5, '#a67c15');
+        tailGrad.addColorStop(1, '#8b6914');
+
+        ctx.fillStyle = tailGrad;
+        ctx.beginPath();
+        ctx.moveTo(-tailW, -tailW * 0.6);
+        ctx.quadraticCurveTo(tailW, -tailW * 0.3, tailW * 1.5, 0);
+        ctx.quadraticCurveTo(tailW, tailW * 0.3, -tailW, tailW * 0.6);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.restore();
+    }
+
+    // === ГОЛОВА ===
     drawSnakeHead(ctx, cellSize, snake, dir);
 }
 
@@ -834,10 +896,9 @@ function drawSnakeHead(ctx, cellSize, snake, dir) {
     const hx = head.x * cellSize + cellSize / 2;
     const hy = head.y * cellSize + cellSize / 2;
 
-    // Размеры головы (2 клетки в длину)
-    const headLength = cellSize * 1.5;
-    const headWidth = cellSize * 0.95;
-    const neckWidth = cellSize * 0.75;
+    // Размеры головы (треугольная форма)
+    const headLen = cellSize * 1.3;
+    const headW = cellSize * 0.9;
 
     // Угол направления
     let angle = 0;
@@ -851,107 +912,102 @@ function drawSnakeHead(ctx, cellSize, snake, dir) {
     ctx.rotate(angle);
 
     // Тень головы
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.25)';
     ctx.beginPath();
-    ctx.ellipse(2, 3, headLength / 2, headWidth / 2 * 0.7, 0, 0, Math.PI * 2);
+    ctx.moveTo(-headLen * 0.4, 0);
+    ctx.lineTo(headLen * 0.3, -headW * 0.4);
+    ctx.lineTo(headLen * 0.6, 0);
+    ctx.lineTo(headLen * 0.3, headW * 0.4);
+    ctx.closePath();
     ctx.fill();
 
-    // Шея (соединение с телом)
+    // Соединение с телом (шея)
     if (snake.length > 1) {
-        const neckGrad = ctx.createLinearGradient(0, -neckWidth / 2, 0, neckWidth / 2);
+        const neckGrad = ctx.createLinearGradient(0, -headW * 0.4, 0, headW * 0.4);
         neckGrad.addColorStop(0, '#ffe066');
         neckGrad.addColorStop(0.5, '#ffd700');
         neckGrad.addColorStop(1, '#cc9900');
         ctx.fillStyle = neckGrad;
         ctx.beginPath();
-        ctx.ellipse(-headLength / 2.5, 0, neckWidth / 2, neckWidth / 2, 0, 0, Math.PI * 2);
+        ctx.arc(-headLen * 0.35, 0, headW * 0.4, 0, Math.PI * 2);
         ctx.fill();
     }
 
-    // Основа головы - овальная форма
-    const headGrad = ctx.createRadialGradient(
-        -headLength * 0.1, -headWidth * 0.1, 0,
-        0, 0, headLength / 1.3
-    );
-    headGrad.addColorStop(0, '#fff5b3');
-    headGrad.addColorStop(0.2, '#ffe066');
-    headGrad.addColorStop(0.5, '#ffd700');
-    headGrad.addColorStop(0.8, '#daa520');
-    headGrad.addColorStop(1, '#b8860b');
+    // === ГОЛОВА - ТРЕУГОЛЬНАЯ ФОРМА ===
+    const headGrad = ctx.createLinearGradient(-headLen * 0.4, 0, headLen * 0.6, 0);
+    headGrad.addColorStop(0, '#ffd700');
+    headGrad.addColorStop(0.3, '#ffdb4d');
+    headGrad.addColorStop(0.6, '#ffc800');
+    headGrad.addColorStop(1, '#daa520');
 
     ctx.fillStyle = headGrad;
     ctx.beginPath();
-    // Овальная форма головы с заострённым носом
-    ctx.moveTo(-headLength / 2.5, 0);
-    ctx.bezierCurveTo(
-        -headLength / 3, -headWidth / 2,
-        headLength / 4, -headWidth / 2.2,
-        headLength / 2, 0
-    );
-    ctx.bezierCurveTo(
-        headLength / 4, headWidth / 2.2,
-        -headLength / 3, headWidth / 2,
-        -headLength / 2.5, 0
-    );
+    // Треугольник с закруглёнными углами
+    ctx.moveTo(-headLen * 0.35, 0);
+    ctx.quadraticCurveTo(-headLen * 0.3, -headW * 0.45, headLen * 0.1, -headW * 0.4);
+    ctx.quadraticCurveTo(headLen * 0.5, -headW * 0.2, headLen * 0.55, 0);
+    ctx.quadraticCurveTo(headLen * 0.5, headW * 0.2, headLen * 0.1, headW * 0.4);
+    ctx.quadraticCurveTo(-headLen * 0.3, headW * 0.45, -headLen * 0.35, 0);
     ctx.fill();
 
     // Верхний блик
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.25)';
     ctx.beginPath();
-    ctx.ellipse(0, -headWidth * 0.18, headLength * 0.3, headWidth * 0.12, 0, 0, Math.PI * 2);
+    ctx.ellipse(0, -headW * 0.15, headLen * 0.25, headW * 0.1, 0, 0, Math.PI * 2);
     ctx.fill();
 
-    // Ноздри
-    ctx.fillStyle = '#4a3000';
+    // Чешуйки на голове
+    ctx.fillStyle = 'rgba(218, 165, 32, 0.4)';
     ctx.beginPath();
-    ctx.ellipse(headLength * 0.35, -headWidth * 0.1, 1.5, 2.5, 0, 0, Math.PI * 2);
+    ctx.ellipse(-headLen * 0.1, -headW * 0.1, headLen * 0.12, headLen * 0.08, -0.2, Math.PI, 0);
     ctx.fill();
     ctx.beginPath();
-    ctx.ellipse(headLength * 0.35, headWidth * 0.1, 1.5, 2.5, 0, 0, Math.PI * 2);
+    ctx.ellipse(headLen * 0.05, -headW * 0.08, headLen * 0.1, headLen * 0.06, -0.2, Math.PI, 0);
     ctx.fill();
 
     // === ГЛАЗА ===
-    const eyeOffsetX = headLength * 0.0;
-    const eyeOffsetY = headWidth * 0.3;
-    const eyeRadius = headWidth * 0.22;
-    const pupilRadius = eyeRadius * 0.55;
+    const eyeX = headLen * 0.05;
+    const eyeY = headW * 0.22;
+    const eyeR = headW * 0.18;
 
-    // Глаза
-    [{ y: -eyeOffsetY }, { y: eyeOffsetY }].forEach(eye => {
-        // Белок глаза
-        const eyeGrad = ctx.createRadialGradient(eyeOffsetX, eye.y, 0, eyeOffsetX, eye.y, eyeRadius);
-        eyeGrad.addColorStop(0, '#ffffff');
-        eyeGrad.addColorStop(0.6, '#f8f8f0');
-        eyeGrad.addColorStop(1, '#e8e0d0');
-        ctx.fillStyle = eyeGrad;
+    [eyeY, -eyeY].forEach(y => {
+        // Глазница (тёмная обводка)
+        ctx.fillStyle = '#4a3800';
         ctx.beginPath();
-        ctx.ellipse(eyeOffsetX, eye.y, eyeRadius, eyeRadius * 0.85, 0, 0, Math.PI * 2);
+        ctx.ellipse(eyeX, y, eyeR + 1, eyeR * 0.85 + 1, 0, 0, Math.PI * 2);
         ctx.fill();
 
-        // Обводка глаза
-        ctx.strokeStyle = '#8b7500';
-        ctx.lineWidth = 1;
-        ctx.stroke();
+        // Белок
+        ctx.fillStyle = '#fffef5';
+        ctx.beginPath();
+        ctx.ellipse(eyeX, y, eyeR, eyeR * 0.85, 0, 0, Math.PI * 2);
+        ctx.fill();
 
-        // Зрачок (рубиновый вертикальный)
-        const pupilGrad = ctx.createRadialGradient(
-            eyeOffsetX + 1, eye.y, 0,
-            eyeOffsetX + 1, eye.y, pupilRadius
-        );
-        pupilGrad.addColorStop(0, '#ff3030');
-        pupilGrad.addColorStop(0.4, '#dd0000');
+        // Зрачок (вертикальный, янтарный/красный)
+        const pupilGrad = ctx.createRadialGradient(eyeX, y, 0, eyeX, y, eyeR * 0.5);
+        pupilGrad.addColorStop(0, '#ff6600');
+        pupilGrad.addColorStop(0.5, '#cc3300');
         pupilGrad.addColorStop(1, '#660000');
         ctx.fillStyle = pupilGrad;
         ctx.beginPath();
-        ctx.ellipse(eyeOffsetX + 1, eye.y, pupilRadius * 0.35, pupilRadius * 0.9, 0, 0, Math.PI * 2);
+        ctx.ellipse(eyeX + 1, y, eyeR * 0.25, eyeR * 0.7, 0, 0, Math.PI * 2);
         ctx.fill();
 
-        // Блик в глазу
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+        // Блик
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
         ctx.beginPath();
-        ctx.arc(eyeOffsetX - eyeRadius * 0.25, eye.y - eyeRadius * 0.25, pupilRadius * 0.3, 0, Math.PI * 2);
+        ctx.arc(eyeX - eyeR * 0.25, y - eyeR * 0.2, eyeR * 0.2, 0, Math.PI * 2);
         ctx.fill();
     });
+
+    // Ноздри
+    ctx.fillStyle = '#3d2b00';
+    ctx.beginPath();
+    ctx.ellipse(headLen * 0.4, -headW * 0.08, 1.5, 2, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.ellipse(headLen * 0.4, headW * 0.08, 1.5, 2, 0, 0, Math.PI * 2);
+    ctx.fill();
 
     ctx.restore();
 }
