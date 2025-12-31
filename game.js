@@ -1,5 +1,5 @@
 // ==========================================
-// 🐉 УРОБОРОС - Мифическая змейка v2.0
+// 🐉 УРОБОРОС - Мифическая змейка v2.4
 // ==========================================
 
 const tg = window.Telegram?.WebApp;
@@ -170,7 +170,12 @@ let gameState = {
     speed: INITIAL_SPEED,
     isPlaying: false,
     isPaused: false,
-    time: 0 // Для анимаций
+    time: 0, // Для анимаций
+    // Анимация поедания
+    isEating: false,
+    eatingTimer: 0,
+    // Еда путешествует по телу
+    foodBulges: [] // { segmentIndex: number, progress: number }
 };
 
 let records = { survival: [], levels: [] };
@@ -407,6 +412,26 @@ function startGame() {
 function animate() {
     if (!gameState.isPlaying || gameState.isPaused) return;
     gameState.time += 0.05;
+
+    // Обновляем таймер поедания
+    if (gameState.isEating) {
+        gameState.eatingTimer--;
+        if (gameState.eatingTimer <= 0) {
+            gameState.isEating = false;
+        }
+    }
+
+    // Обновляем движение еды по телу
+    gameState.foodBulges = gameState.foodBulges.filter(bulge => {
+        bulge.progress += 0.08; // скорость движения
+        if (bulge.progress >= 1) {
+            bulge.progress = 0;
+            bulge.segmentIndex++;
+        }
+        // Удаляем когда дошло до конца
+        return bulge.segmentIndex < gameState.snake.length - 1;
+    });
+
     draw();
     gameState.animationFrame = requestAnimationFrame(animate);
 }
@@ -472,6 +497,16 @@ function eatFood() {
         clearInterval(gameState.foodTimer);
         gameState.foodTimer = null;
     }
+
+    // Запускаем анимацию поедания (открытый рот)
+    gameState.isEating = true;
+    gameState.eatingTimer = 12; // кадров анимации
+
+    // Добавляем "еду" которая будет путешествовать по телу
+    gameState.foodBulges.push({
+        segmentIndex: 0,
+        progress: 0
+    });
 
     haptic('light');
 
@@ -761,6 +796,19 @@ function drawSnake(ctx, cellSize) {
         return cellSize * 0.8 * (1 - progress * 0.35);
     }
 
+    // Получаем "выпуклость" от еды в данном сегменте
+    function getBulgeScale(segIndex) {
+        let scale = 1;
+        for (const bulge of gameState.foodBulges) {
+            if (bulge.segmentIndex === segIndex) {
+                // Максимум в середине прогресса
+                const bulgeAmount = Math.sin(bulge.progress * Math.PI) * 0.4;
+                scale = Math.max(scale, 1 + bulgeAmount);
+            }
+        }
+        return scale;
+    }
+
     // Цвет сегмента (золотой градиент к хвосту)
     function getColor(progress) {
         const r = Math.floor(255 - progress * 45);
@@ -769,11 +817,28 @@ function drawSnake(ctx, cellSize) {
         return { r, g, b };
     }
 
+    // Проверяем есть ли поворот между сегментами
+    function isTurn(i) {
+        if (i <= 0 || i >= len - 1) return false;
+        const prev = snake[i + 1];
+        const curr = snake[i];
+        const next = snake[i - 1];
+        // Проверяем телепортацию
+        if (Math.abs(prev.x - curr.x) > 1 || Math.abs(prev.y - curr.y) > 1) return false;
+        if (Math.abs(curr.x - next.x) > 1 || Math.abs(curr.y - next.y) > 1) return false;
+        // Направление до и после
+        const dx1 = curr.x - prev.x;
+        const dy1 = curr.y - prev.y;
+        const dx2 = next.x - curr.x;
+        const dy2 = next.y - curr.y;
+        return dx1 !== dx2 || dy1 !== dy2;
+    }
+
     // === ТЕНЬ ===
     ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
     for (let i = len - 1; i >= 0; i--) {
         const seg = getCoords(snake[i]);
-        const w = getWidth(i);
+        const w = getWidth(i) * getBulgeScale(i);
         ctx.beginPath();
         ctx.ellipse(seg.x + 2, seg.y + 3, w / 2, w / 2 * 0.6, 0, 0, Math.PI * 2);
         ctx.fill();
@@ -785,8 +850,10 @@ function drawSnake(ctx, cellSize) {
         const curr = getCoords(snake[i]);
         const next = getCoords(snake[i - 1]);
         const progress = i / Math.max(len - 1, 1);
-        const w1 = getWidth(i);
-        const w2 = getWidth(i - 1);
+        const bulge1 = getBulgeScale(i);
+        const bulge2 = getBulgeScale(i - 1);
+        const w1 = getWidth(i) * bulge1;
+        const w2 = getWidth(i - 1) * bulge2;
         const col = getColor(progress);
 
         // Пропускаем телепортацию
@@ -818,12 +885,33 @@ function drawSnake(ctx, cellSize) {
         ctx.restore();
     }
 
+    // === КРУГЛЫЕ СОЧЛЕНЕНИЯ НА ПОВОРОТАХ ===
+    for (let i = len - 2; i >= 1; i--) {
+        if (isTurn(i)) {
+            const seg = getCoords(snake[i]);
+            const progress = i / Math.max(len - 1, 1);
+            const w = getWidth(i) * getBulgeScale(i);
+            const col = getColor(progress);
+
+            // Круглое сочленение закрывает промежуток
+            const jointGrad = ctx.createRadialGradient(seg.x, seg.y, 0, seg.x, seg.y, w / 2);
+            jointGrad.addColorStop(0, `rgb(${col.r + 20}, ${col.g + 20}, ${col.b + 15})`);
+            jointGrad.addColorStop(0.7, `rgb(${col.r}, ${col.g}, ${col.b})`);
+            jointGrad.addColorStop(1, `rgb(${col.r - 20}, ${col.g - 20}, ${col.b - 10})`);
+
+            ctx.fillStyle = jointGrad;
+            ctx.beginPath();
+            ctx.arc(seg.x, seg.y, w / 2, 0, Math.PI * 2);
+            ctx.fill();
+        }
+    }
+
     // === ЧЕШУЙКИ (поверх тела) ===
     for (let i = len - 1; i >= 2; i--) {
         const seg = getCoords(snake[i]);
         const prev = i < len - 1 ? getCoords(snake[i + 1]) : seg;
         const progress = i / Math.max(len - 1, 1);
-        const w = getWidth(i);
+        const w = getWidth(i) * getBulgeScale(i);
         const col = getColor(progress);
 
         // Направление сегмента
@@ -855,6 +943,29 @@ function drawSnake(ctx, cellSize) {
         ctx.fill();
 
         ctx.restore();
+    }
+
+    // === ВИЗУАЛИЗАЦИЯ ЕДЫ ВНУТРИ ТЕЛА ===
+    for (const bulge of gameState.foodBulges) {
+        if (bulge.segmentIndex >= 0 && bulge.segmentIndex < len - 1) {
+            const curr = getCoords(snake[bulge.segmentIndex]);
+            const next = getCoords(snake[bulge.segmentIndex + 1]);
+            // Интерполяция позиции
+            const x = curr.x + (next.x - curr.x) * bulge.progress;
+            const y = curr.y + (next.y - curr.y) * bulge.progress;
+            const w = getWidth(bulge.segmentIndex) * 0.5;
+
+            // Светящийся шарик еды внутри
+            const foodGrad = ctx.createRadialGradient(x, y, 0, x, y, w);
+            foodGrad.addColorStop(0, 'rgba(255, 220, 100, 0.8)');
+            foodGrad.addColorStop(0.5, 'rgba(255, 180, 50, 0.5)');
+            foodGrad.addColorStop(1, 'rgba(255, 150, 0, 0)');
+
+            ctx.fillStyle = foodGrad;
+            ctx.beginPath();
+            ctx.arc(x, y, w, 0, Math.PI * 2);
+            ctx.fill();
+        }
     }
 
     // === ХВОСТ ===
@@ -907,6 +1018,10 @@ function drawSnakeHead(ctx, cellSize, snake, dir) {
     else if (dir.y === -1) angle = -Math.PI / 2;
     else angle = Math.PI / 2;
 
+    // Анимация открытия рта
+    const isEating = gameState.isEating;
+    const mouthOpen = isEating ? Math.sin((12 - gameState.eatingTimer) / 12 * Math.PI) * 0.3 : 0;
+
     ctx.save();
     ctx.translate(hx, hy);
     ctx.rotate(angle);
@@ -933,44 +1048,99 @@ function drawSnakeHead(ctx, cellSize, snake, dir) {
         ctx.fill();
     }
 
-    // === ГОЛОВА - ТРЕУГОЛЬНАЯ ФОРМА ===
-    const headGrad = ctx.createLinearGradient(-headLen * 0.4, 0, headLen * 0.6, 0);
-    headGrad.addColorStop(0, '#ffd700');
-    headGrad.addColorStop(0.3, '#ffdb4d');
-    headGrad.addColorStop(0.6, '#ffc800');
-    headGrad.addColorStop(1, '#daa520');
+    // === ГОЛОВА С ОТКРЫТЫМ РТОМ ===
+    if (isEating && mouthOpen > 0.1) {
+        // Рисуем верхнюю и нижнюю челюсть отдельно
+        const jawOffset = headW * mouthOpen;
 
-    ctx.fillStyle = headGrad;
-    ctx.beginPath();
-    // Треугольник с закруглёнными углами
-    ctx.moveTo(-headLen * 0.35, 0);
-    ctx.quadraticCurveTo(-headLen * 0.3, -headW * 0.45, headLen * 0.1, -headW * 0.4);
-    ctx.quadraticCurveTo(headLen * 0.5, -headW * 0.2, headLen * 0.55, 0);
-    ctx.quadraticCurveTo(headLen * 0.5, headW * 0.2, headLen * 0.1, headW * 0.4);
-    ctx.quadraticCurveTo(-headLen * 0.3, headW * 0.45, -headLen * 0.35, 0);
-    ctx.fill();
+        // Верхняя челюсть
+        ctx.save();
+        ctx.translate(0, -jawOffset * 0.5);
+
+        const upperGrad = ctx.createLinearGradient(-headLen * 0.4, 0, headLen * 0.6, 0);
+        upperGrad.addColorStop(0, '#ffd700');
+        upperGrad.addColorStop(0.5, '#ffdb4d');
+        upperGrad.addColorStop(1, '#daa520');
+
+        ctx.fillStyle = upperGrad;
+        ctx.beginPath();
+        ctx.moveTo(-headLen * 0.35, 0);
+        ctx.quadraticCurveTo(-headLen * 0.3, -headW * 0.35, headLen * 0.1, -headW * 0.3);
+        ctx.quadraticCurveTo(headLen * 0.5, -headW * 0.1, headLen * 0.55, 0);
+        ctx.lineTo(-headLen * 0.35, 0);
+        ctx.fill();
+        ctx.restore();
+
+        // Нижняя челюсть
+        ctx.save();
+        ctx.translate(0, jawOffset * 0.5);
+
+        const lowerGrad = ctx.createLinearGradient(-headLen * 0.4, 0, headLen * 0.6, 0);
+        lowerGrad.addColorStop(0, '#e6c200');
+        lowerGrad.addColorStop(0.5, '#ffc800');
+        lowerGrad.addColorStop(1, '#cc9900');
+
+        ctx.fillStyle = lowerGrad;
+        ctx.beginPath();
+        ctx.moveTo(-headLen * 0.35, 0);
+        ctx.lineTo(headLen * 0.55, 0);
+        ctx.quadraticCurveTo(headLen * 0.5, headW * 0.1, headLen * 0.1, headW * 0.3);
+        ctx.quadraticCurveTo(-headLen * 0.3, headW * 0.35, -headLen * 0.35, 0);
+        ctx.fill();
+        ctx.restore();
+
+        // Рот (внутренняя часть)
+        ctx.fillStyle = '#4a1a1a';
+        ctx.beginPath();
+        ctx.ellipse(headLen * 0.3, 0, headLen * 0.2, jawOffset, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Язык внутри рта
+        ctx.fillStyle = '#cc4444';
+        ctx.beginPath();
+        ctx.ellipse(headLen * 0.25, 0, headLen * 0.1, jawOffset * 0.5, 0, 0, Math.PI * 2);
+        ctx.fill();
+    } else {
+        // === ГОЛОВА - ОБЫЧНАЯ ТРЕУГОЛЬНАЯ ФОРМА ===
+        const headGrad = ctx.createLinearGradient(-headLen * 0.4, 0, headLen * 0.6, 0);
+        headGrad.addColorStop(0, '#ffd700');
+        headGrad.addColorStop(0.3, '#ffdb4d');
+        headGrad.addColorStop(0.6, '#ffc800');
+        headGrad.addColorStop(1, '#daa520');
+
+        ctx.fillStyle = headGrad;
+        ctx.beginPath();
+        // Треугольник с закруглёнными углами
+        ctx.moveTo(-headLen * 0.35, 0);
+        ctx.quadraticCurveTo(-headLen * 0.3, -headW * 0.45, headLen * 0.1, -headW * 0.4);
+        ctx.quadraticCurveTo(headLen * 0.5, -headW * 0.2, headLen * 0.55, 0);
+        ctx.quadraticCurveTo(headLen * 0.5, headW * 0.2, headLen * 0.1, headW * 0.4);
+        ctx.quadraticCurveTo(-headLen * 0.3, headW * 0.45, -headLen * 0.35, 0);
+        ctx.fill();
+    }
 
     // Верхний блик
     ctx.fillStyle = 'rgba(255, 255, 255, 0.25)';
     ctx.beginPath();
-    ctx.ellipse(0, -headW * 0.15, headLen * 0.25, headW * 0.1, 0, 0, Math.PI * 2);
+    ctx.ellipse(0, -headW * 0.15 - (isEating ? mouthOpen * headW * 0.3 : 0), headLen * 0.25, headW * 0.1, 0, 0, Math.PI * 2);
     ctx.fill();
 
     // Чешуйки на голове
     ctx.fillStyle = 'rgba(218, 165, 32, 0.4)';
     ctx.beginPath();
-    ctx.ellipse(-headLen * 0.1, -headW * 0.1, headLen * 0.12, headLen * 0.08, -0.2, Math.PI, 0);
+    ctx.ellipse(-headLen * 0.1, -headW * 0.1 - (isEating ? mouthOpen * headW * 0.2 : 0), headLen * 0.12, headLen * 0.08, -0.2, Math.PI, 0);
     ctx.fill();
     ctx.beginPath();
-    ctx.ellipse(headLen * 0.05, -headW * 0.08, headLen * 0.1, headLen * 0.06, -0.2, Math.PI, 0);
+    ctx.ellipse(headLen * 0.05, -headW * 0.08 - (isEating ? mouthOpen * headW * 0.2 : 0), headLen * 0.1, headLen * 0.06, -0.2, Math.PI, 0);
     ctx.fill();
 
     // === ГЛАЗА ===
     const eyeX = headLen * 0.05;
     const eyeY = headW * 0.22;
     const eyeR = headW * 0.18;
+    const eyeOffset = isEating ? mouthOpen * headW * 0.3 : 0;
 
-    [eyeY, -eyeY].forEach(y => {
+    [eyeY + eyeOffset, -eyeY - eyeOffset].forEach(y => {
         // Глазница (тёмная обводка)
         ctx.fillStyle = '#4a3800';
         ctx.beginPath();
@@ -1000,13 +1170,13 @@ function drawSnakeHead(ctx, cellSize, snake, dir) {
         ctx.fill();
     });
 
-    // Ноздри
+    // Ноздри (смещаются при открытом рте)
     ctx.fillStyle = '#3d2b00';
     ctx.beginPath();
-    ctx.ellipse(headLen * 0.4, -headW * 0.08, 1.5, 2, 0, 0, Math.PI * 2);
+    ctx.ellipse(headLen * 0.4, -headW * 0.08 - eyeOffset * 0.5, 1.5, 2, 0, 0, Math.PI * 2);
     ctx.fill();
     ctx.beginPath();
-    ctx.ellipse(headLen * 0.4, headW * 0.08, 1.5, 2, 0, 0, Math.PI * 2);
+    ctx.ellipse(headLen * 0.4, headW * 0.08 + eyeOffset * 0.5, 1.5, 2, 0, 0, Math.PI * 2);
     ctx.fill();
 
     ctx.restore();
