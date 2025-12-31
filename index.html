@@ -3,43 +3,123 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>🐍 Змейка | Telegram Mini App</title>
+    <title>🐍 Уроборос | Telegram Mini App</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div id="app">
-        <div id="header">
-            <div id="score-container">
-                <span id="score-label">Счёт:</span>
-                <span id="score">0</span>
+        <!-- Главное меню -->
+        <div id="main-menu" class="screen">
+            <div class="menu-header">
+                <div class="ouroboros-icon">🐉</div>
+                <h1>УРОБОРОС</h1>
+                <p class="subtitle">Вечный змей</p>
             </div>
-            <div id="best-score-container">
-                <span id="best-label">Рекорд:</span>
-                <span id="best-score">0</span>
+            <div class="menu-buttons">
+                <button class="menu-btn" id="btn-survival">
+                    <span class="btn-icon">♾️</span>
+                    <span class="btn-text">Выживание</span>
+                    <span class="btn-desc">Бесконечная игра</span>
+                </button>
+                <button class="menu-btn" id="btn-levels">
+                    <span class="btn-icon">🏛️</span>
+                    <span class="btn-text">Уровни</span>
+                    <span class="btn-desc">10 испытаний</span>
+                </button>
+                <button class="menu-btn secondary" id="btn-leaderboard">
+                    <span class="btn-icon">🏆</span>
+                    <span class="btn-text">Рекорды</span>
+                </button>
             </div>
         </div>
 
-        <div id="game-container">
-            <canvas id="game-canvas"></canvas>
-            <div id="start-screen">
-                <h1>🐍 Змейка</h1>
-                <p>Собирай яблоки и расти!</p>
-                <button id="start-btn">▶ Играть</button>
+        <!-- Экран выбора уровня -->
+        <div id="level-select" class="screen hidden">
+            <div class="screen-header">
+                <button class="back-btn" id="btn-back-levels">←</button>
+                <h2>Выбери уровень</h2>
             </div>
-            <div id="game-over-screen" class="hidden">
-                <h2>Игра окончена!</h2>
-                <p>Ваш счёт: <span id="final-score">0</span></p>
-                <button id="restart-btn">🔄 Играть снова</button>
+            <div id="levels-grid" class="levels-grid">
+                <!-- Уровни генерируются в JS -->
             </div>
         </div>
 
-        <div id="controls">
-            <button class="control-btn" id="btn-up">↑</button>
-            <div class="control-row">
-                <button class="control-btn" id="btn-left">←</button>
-                <button class="control-btn" id="btn-down">↓</button>
-                <button class="control-btn" id="btn-right">→</button>
+        <!-- Экран рекордов -->
+        <div id="leaderboard-screen" class="screen hidden">
+            <div class="screen-header">
+                <button class="back-btn" id="btn-back-leaderboard">←</button>
+                <h2>🏆 Таблица рекордов</h2>
+            </div>
+            <div class="leaderboard-tabs">
+                <button class="tab-btn active" data-tab="survival">Выживание</button>
+                <button class="tab-btn" data-tab="levels">Уровни</button>
+            </div>
+            <div id="leaderboard-list" class="leaderboard-list">
+                <!-- Рекорды генерируются в JS -->
+            </div>
+        </div>
+
+        <!-- Игровой экран -->
+        <div id="game-screen" class="screen hidden">
+            <div id="header">
+                <button class="back-btn" id="btn-back-game">←</button>
+                <div id="game-info">
+                    <div id="score-container">
+                        <span id="score-label">Счёт:</span>
+                        <span id="score">0</span>
+                    </div>
+                    <div id="level-info" class="hidden">
+                        <span>Уровень <span id="current-level">1</span></span>
+                        <span class="level-progress">
+                            <span id="level-score">0</span>/<span id="level-goal">10</span>
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <div id="game-container">
+                <canvas id="game-canvas"></canvas>
+
+                <!-- Пауза -->
+                <div id="pause-overlay" class="overlay hidden">
+                    <h2>⏸️ Пауза</h2>
+                    <button class="game-btn" id="btn-resume">▶️ Продолжить</button>
+                    <button class="game-btn secondary" id="btn-quit">🚪 Выйти</button>
+                </div>
+
+                <!-- Победа уровня -->
+                <div id="level-complete" class="overlay hidden">
+                    <h2>✨ Уровень пройден!</h2>
+                    <p>Очки: <span id="level-complete-score">0</span></p>
+                    <button class="game-btn" id="btn-next-level">➡️ Следующий уровень</button>
+                </div>
+
+                <!-- Конец игры -->
+                <div id="game-over" class="overlay hidden">
+                    <h2>💀 Игра окончена</h2>
+                    <p>Счёт: <span id="final-score">0</span></p>
+                    <p id="new-record" class="hidden">🎉 Новый рекорд!</p>
+                    <button class="game-btn" id="btn-retry">🔄 Ещё раз</button>
+                    <button class="game-btn secondary" id="btn-menu">🏠 Меню</button>
+                </div>
+
+                <!-- Все уровни пройдены -->
+                <div id="game-complete" class="overlay hidden">
+                    <h2>🏆 Победа!</h2>
+                    <p>Все уровни пройдены!</p>
+                    <p>Общий счёт: <span id="total-score">0</span></p>
+                    <button class="game-btn" id="btn-complete-menu">🏠 В меню</button>
+                </div>
+            </div>
+
+            <div id="controls">
+                <button class="control-btn" id="btn-up">↑</button>
+                <div class="control-row">
+                    <button class="control-btn" id="btn-left">←</button>
+                    <button class="control-btn" id="btn-down">↓</button>
+                    <button class="control-btn" id="btn-right">→</button>
+                </div>
             </div>
         </div>
     </div>

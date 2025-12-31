@@ -1,4 +1,7 @@
-/* Сброс стилей и базовые настройки */
+/* ==========================================
+   🐉 УРОБОРОС - Мифический стиль
+   ========================================== */
+
 * {
     margin: 0;
     padding: 0;
@@ -6,21 +9,37 @@
 }
 
 :root {
-    --bg-color: #1a1a2e;
-    --primary-color: #16213e;
-    --accent-color: #0f3460;
-    --text-color: #e94560;
-    --snake-color: #00ff88;
-    --snake-head-color: #00cc6a;
-    --food-color: #ff6b6b;
-    --button-color: #e94560;
-    --button-hover: #ff6b8a;
+    /* Мифическая палитра */
+    --bg-dark: #0d0d1a;
+    --bg-medium: #1a1a2e;
+    --bg-light: #252542;
+
+    /* Золото */
+    --gold-dark: #b8860b;
+    --gold: #ffd700;
+    --gold-light: #ffe55c;
+
+    /* Акценты */
+    --ruby: #e63946;
+    --emerald: #2a9d8f;
+    --amethyst: #9b5de5;
+
+    /* Текст */
+    --text-light: #f1faee;
+    --text-muted: #a8a8b3;
+
+    /* Препятствия */
+    --obstacle-color: #4a4a6a;
+    --obstacle-border: #6a6a8a;
 }
 
 body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    background: var(--bg-color);
-    color: white;
+    background: var(--bg-dark);
+    background-image:
+        radial-gradient(ellipse at top, #1a1a3e 0%, transparent 50%),
+        radial-gradient(ellipse at bottom, #2a1a2e 0%, transparent 50%);
+    color: var(--text-light);
     min-height: 100vh;
     display: flex;
     justify-content: center;
@@ -31,58 +50,395 @@ body {
 
 #app {
     width: 100%;
-    max-width: 400px;
-    padding: 10px;
+    max-width: 420px;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+/* ==========================================
+   Экраны
+   ========================================== */
+
+.screen {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 20px;
+    animation: fadeIn 0.3s ease;
+}
+
+.screen.hidden {
+    display: none !important;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* ==========================================
+   Главное меню
+   ========================================== */
+
+.menu-header {
+    text-align: center;
+    padding: 40px 0;
+}
+
+.ouroboros-icon {
+    font-size: 80px;
+    animation: float 3s ease-in-out infinite;
+    filter: drop-shadow(0 0 20px var(--gold));
+}
+
+@keyframes float {
+    0%, 100% { transform: translateY(0) rotate(0deg); }
+    50% { transform: translateY(-10px) rotate(5deg); }
+}
+
+.menu-header h1 {
+    font-size: 36px;
+    background: linear-gradient(135deg, var(--gold-light), var(--gold), var(--gold-dark));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    text-shadow: 0 0 30px rgba(255, 215, 0, 0.3);
+    letter-spacing: 4px;
+    margin: 10px 0;
+}
+
+.subtitle {
+    color: var(--text-muted);
+    font-style: italic;
+}
+
+.menu-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    margin-top: 30px;
+}
+
+.menu-btn {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 15px;
+    padding: 20px;
+    background: linear-gradient(135deg, var(--bg-light), var(--bg-medium));
+    border: 2px solid var(--gold-dark);
+    border-radius: 16px;
+    color: var(--text-light);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
 }
 
-/* Заголовок со счётом */
-#header {
+.menu-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
     width: 100%;
-    display: flex;
-    justify-content: space-between;
-    padding: 10px 20px;
-    background: var(--primary-color);
-    border-radius: 12px;
-    font-size: 18px;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 215, 0, 0.1), transparent);
+    transition: left 0.5s ease;
+}
+
+.menu-btn:hover::before {
+    left: 100%;
+}
+
+.menu-btn:hover {
+    border-color: var(--gold);
+    transform: translateY(-2px);
+    box-shadow: 0 5px 20px rgba(255, 215, 0, 0.2);
+}
+
+.menu-btn:active {
+    transform: translateY(0);
+}
+
+.menu-btn.secondary {
+    background: transparent;
+    border-color: var(--bg-light);
+}
+
+.menu-btn.secondary:hover {
+    border-color: var(--gold-dark);
+}
+
+.btn-icon {
+    font-size: 32px;
+    margin-bottom: 5px;
+}
+
+.btn-text {
+    font-size: 20px;
     font-weight: bold;
 }
 
-#score-container, #best-score-container {
+.btn-desc {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-top: 5px;
+}
+
+/* ==========================================
+   Заголовки экранов
+   ========================================== */
+
+.screen-header {
     display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.screen-header h2 {
+    font-size: 20px;
+    color: var(--gold);
+}
+
+.back-btn {
+    width: 40px;
+    height: 40px;
+    background: var(--bg-light);
+    border: 1px solid var(--gold-dark);
+    border-radius: 10px;
+    color: var(--gold);
+    font-size: 20px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.back-btn:hover {
+    background: var(--gold-dark);
+    color: var(--bg-dark);
+}
+
+/* ==========================================
+   Выбор уровня
+   ========================================== */
+
+.levels-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 10px;
+}
+
+.level-btn {
+    aspect-ratio: 1;
+    background: var(--bg-light);
+    border: 2px solid var(--bg-light);
+    border-radius: 12px;
+    color: var(--text-light);
+    font-size: 18px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
+}
+
+.level-btn:hover:not(:disabled) {
+    border-color: var(--gold);
+    transform: scale(1.05);
+}
+
+.level-btn.completed {
+    background: linear-gradient(135deg, var(--gold-dark), var(--gold));
+    color: var(--bg-dark);
+    border-color: var(--gold);
+}
+
+.level-btn.current {
+    border-color: var(--gold);
+    box-shadow: 0 0 15px rgba(255, 215, 0, 0.4);
+}
+
+.level-btn:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+}
+
+.level-btn .stars {
+    position: absolute;
+    bottom: 2px;
+    left: 0;
+    right: 0;
+    font-size: 8px;
+    color: var(--gold);
+}
+
+/* ==========================================
+   Таблица рекордов
+   ========================================== */
+
+.leaderboard-tabs {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.tab-btn {
+    flex: 1;
+    padding: 12px;
+    background: var(--bg-light);
+    border: 1px solid var(--bg-light);
+    border-radius: 10px;
+    color: var(--text-muted);
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.tab-btn.active {
+    background: linear-gradient(135deg, var(--gold-dark), var(--gold));
+    color: var(--bg-dark);
+    font-weight: bold;
+}
+
+.leaderboard-list {
+    display: flex;
+    flex-direction: column;
     gap: 8px;
+    overflow-y: auto;
+    max-height: 60vh;
+}
+
+.leaderboard-item {
+    display: flex;
+    align-items: center;
+    padding: 12px 15px;
+    background: var(--bg-light);
+    border-radius: 10px;
+    gap: 15px;
+}
+
+.leaderboard-item.gold {
+    background: linear-gradient(135deg, rgba(255, 215, 0, 0.2), var(--bg-light));
+    border: 1px solid var(--gold);
+}
+
+.leaderboard-item.silver {
+    background: linear-gradient(135deg, rgba(192, 192, 192, 0.2), var(--bg-light));
+    border: 1px solid #c0c0c0;
+}
+
+.leaderboard-item.bronze {
+    background: linear-gradient(135deg, rgba(205, 127, 50, 0.2), var(--bg-light));
+    border: 1px solid #cd7f32;
+}
+
+.rank {
+    font-size: 18px;
+    font-weight: bold;
+    width: 30px;
+    text-align: center;
+}
+
+.rank-1 { color: var(--gold); }
+.rank-2 { color: #c0c0c0; }
+.rank-3 { color: #cd7f32; }
+
+.record-info {
+    flex: 1;
+}
+
+.record-date {
+    font-size: 11px;
+    color: var(--text-muted);
+}
+
+.record-score {
+    font-size: 18px;
+    font-weight: bold;
+    color: var(--gold);
+}
+
+.empty-leaderboard {
+    text-align: center;
+    padding: 40px;
+    color: var(--text-muted);
+}
+
+/* ==========================================
+   Игровой экран
+   ========================================== */
+
+#game-screen {
+    padding: 10px;
+    gap: 10px;
+}
+
+#header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px;
+    background: var(--bg-medium);
+    border-radius: 12px;
+    border: 1px solid var(--gold-dark);
+}
+
+#game-info {
+    flex: 1;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+#score-container {
+    font-size: 18px;
 }
 
 #score {
-    color: var(--snake-color);
+    color: var(--gold);
+    font-weight: bold;
 }
 
-#best-score {
-    color: var(--food-color);
+#level-info {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    font-size: 14px;
 }
 
-/* Контейнер игры */
+.level-progress {
+    color: var(--emerald);
+    font-weight: bold;
+}
+
+/* ==========================================
+   Игровое поле
+   ========================================== */
+
 #game-container {
     position: relative;
-    width: 100%;
-    aspect-ratio: 1;
-    background: var(--primary-color);
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: var(--bg-medium);
     border-radius: 12px;
+    border: 2px solid var(--gold-dark);
     overflow: hidden;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    box-shadow:
+        inset 0 0 50px rgba(0, 0, 0, 0.5),
+        0 0 30px rgba(255, 215, 0, 0.1);
 }
 
 #game-canvas {
-    width: 100%;
-    height: 100%;
-    display: block;
+    max-width: 100%;
+    max-height: 100%;
 }
 
-/* Стартовый экран */
-#start-screen, #game-over-screen {
+/* ==========================================
+   Оверлеи
+   ========================================== */
+
+.overlay {
     position: absolute;
     top: 0;
     left: 0;
@@ -92,70 +448,72 @@ body {
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    background: rgba(26, 26, 46, 0.95);
-    gap: 20px;
+    background: rgba(13, 13, 26, 0.95);
+    gap: 15px;
     z-index: 10;
+    animation: fadeIn 0.3s ease;
 }
 
-#start-screen h1 {
-    font-size: 48px;
-    text-shadow: 0 0 20px var(--snake-color);
+.overlay h2 {
+    font-size: 28px;
+    color: var(--gold);
 }
 
-#start-screen p, #game-over-screen p {
+.overlay p {
     font-size: 18px;
-    color: #aaa;
+    color: var(--text-muted);
 }
 
-#game-over-screen h2 {
-    font-size: 32px;
-    color: var(--text-color);
-}
-
-#final-score {
-    color: var(--snake-color);
+#new-record {
+    color: var(--gold) !important;
     font-weight: bold;
+    animation: pulse 1s ease infinite;
 }
 
-.hidden {
-    display: none !important;
+@keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.1); }
 }
 
-/* Кнопки */
-button {
-    font-family: inherit;
-    cursor: pointer;
+.game-btn {
+    padding: 15px 30px;
+    font-size: 16px;
+    font-weight: bold;
+    background: linear-gradient(135deg, var(--gold-dark), var(--gold));
+    color: var(--bg-dark);
     border: none;
-    outline: none;
-    -webkit-tap-highlight-color: transparent;
-}
-
-#start-btn, #restart-btn {
-    padding: 15px 40px;
-    font-size: 20px;
-    font-weight: bold;
-    background: var(--button-color);
-    color: white;
-    border-radius: 30px;
+    border-radius: 25px;
+    cursor: pointer;
     transition: all 0.2s ease;
+    min-width: 200px;
 }
 
-#start-btn:hover, #restart-btn:hover {
-    background: var(--button-hover);
+.game-btn:hover {
     transform: scale(1.05);
+    box-shadow: 0 5px 20px rgba(255, 215, 0, 0.3);
 }
 
-#start-btn:active, #restart-btn:active {
-    transform: scale(0.98);
+.game-btn.secondary {
+    background: transparent;
+    border: 2px solid var(--gold-dark);
+    color: var(--gold);
 }
 
-/* Мобильное управление */
+.game-btn.secondary:hover {
+    background: var(--gold-dark);
+    color: var(--bg-dark);
+}
+
+/* ==========================================
+   Управление
+   ========================================== */
+
 #controls {
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 5px;
-    margin-top: 10px;
+    padding: 10px;
 }
 
 .control-row {
@@ -164,59 +522,77 @@ button {
 }
 
 .control-btn {
-    width: 70px;
-    height: 70px;
-    font-size: 28px;
-    background: var(--accent-color);
-    color: white;
+    width: 65px;
+    height: 65px;
+    font-size: 24px;
+    background: var(--bg-light);
+    border: 2px solid var(--gold-dark);
     border-radius: 15px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
+    color: var(--gold);
+    cursor: pointer;
     transition: all 0.1s ease;
     user-select: none;
+    -webkit-tap-highlight-color: transparent;
 }
 
 .control-btn:active {
-    background: var(--button-color);
+    background: var(--gold-dark);
+    color: var(--bg-dark);
     transform: scale(0.95);
 }
 
-/* Адаптация для маленьких экранов */
+/* ==========================================
+   Адаптивность
+   ========================================== */
+
 @media (max-height: 700px) {
-    #app {
-        gap: 8px;
+    .menu-header {
+        padding: 20px 0;
     }
 
-    #header {
-        padding: 8px 15px;
-        font-size: 16px;
+    .ouroboros-icon {
+        font-size: 60px;
+    }
+
+    .menu-header h1 {
+        font-size: 28px;
+    }
+
+    .menu-btn {
+        padding: 15px;
     }
 
     .control-btn {
-        width: 60px;
-        height: 60px;
-        font-size: 24px;
-    }
-
-    #start-screen h1 {
-        font-size: 36px;
+        width: 55px;
+        height: 55px;
+        font-size: 20px;
     }
 }
 
-/* Анимация змейки */
-@keyframes pulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.7; }
-}
-
-/* Скрытие управления на десктопе */
 @media (min-width: 768px) and (hover: hover) {
     #controls {
-        opacity: 0.3;
+        opacity: 0.4;
+        transition: opacity 0.3s;
     }
 
     #controls:hover {
         opacity: 1;
     }
+}
+
+/* ==========================================
+   Скроллбар
+   ========================================== */
+
+::-webkit-scrollbar {
+    width: 6px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--bg-dark);
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--gold-dark);
+    border-radius: 3px;
 }
