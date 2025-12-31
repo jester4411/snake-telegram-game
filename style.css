@@ -1,0 +1,222 @@
+/* Сброс стилей и базовые настройки */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+:root {
+    --bg-color: #1a1a2e;
+    --primary-color: #16213e;
+    --accent-color: #0f3460;
+    --text-color: #e94560;
+    --snake-color: #00ff88;
+    --snake-head-color: #00cc6a;
+    --food-color: #ff6b6b;
+    --button-color: #e94560;
+    --button-hover: #ff6b8a;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: var(--bg-color);
+    color: white;
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+    touch-action: manipulation;
+}
+
+#app {
+    width: 100%;
+    max-width: 400px;
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 15px;
+}
+
+/* Заголовок со счётом */
+#header {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    padding: 10px 20px;
+    background: var(--primary-color);
+    border-radius: 12px;
+    font-size: 18px;
+    font-weight: bold;
+}
+
+#score-container, #best-score-container {
+    display: flex;
+    gap: 8px;
+}
+
+#score {
+    color: var(--snake-color);
+}
+
+#best-score {
+    color: var(--food-color);
+}
+
+/* Контейнер игры */
+#game-container {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 1;
+    background: var(--primary-color);
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+#game-canvas {
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+
+/* Стартовый экран */
+#start-screen, #game-over-screen {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    background: rgba(26, 26, 46, 0.95);
+    gap: 20px;
+    z-index: 10;
+}
+
+#start-screen h1 {
+    font-size: 48px;
+    text-shadow: 0 0 20px var(--snake-color);
+}
+
+#start-screen p, #game-over-screen p {
+    font-size: 18px;
+    color: #aaa;
+}
+
+#game-over-screen h2 {
+    font-size: 32px;
+    color: var(--text-color);
+}
+
+#final-score {
+    color: var(--snake-color);
+    font-weight: bold;
+}
+
+.hidden {
+    display: none !important;
+}
+
+/* Кнопки */
+button {
+    font-family: inherit;
+    cursor: pointer;
+    border: none;
+    outline: none;
+    -webkit-tap-highlight-color: transparent;
+}
+
+#start-btn, #restart-btn {
+    padding: 15px 40px;
+    font-size: 20px;
+    font-weight: bold;
+    background: var(--button-color);
+    color: white;
+    border-radius: 30px;
+    transition: all 0.2s ease;
+}
+
+#start-btn:hover, #restart-btn:hover {
+    background: var(--button-hover);
+    transform: scale(1.05);
+}
+
+#start-btn:active, #restart-btn:active {
+    transform: scale(0.98);
+}
+
+/* Мобильное управление */
+#controls {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+    margin-top: 10px;
+}
+
+.control-row {
+    display: flex;
+    gap: 5px;
+}
+
+.control-btn {
+    width: 70px;
+    height: 70px;
+    font-size: 28px;
+    background: var(--accent-color);
+    color: white;
+    border-radius: 15px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transition: all 0.1s ease;
+    user-select: none;
+}
+
+.control-btn:active {
+    background: var(--button-color);
+    transform: scale(0.95);
+}
+
+/* Адаптация для маленьких экранов */
+@media (max-height: 700px) {
+    #app {
+        gap: 8px;
+    }
+
+    #header {
+        padding: 8px 15px;
+        font-size: 16px;
+    }
+
+    .control-btn {
+        width: 60px;
+        height: 60px;
+        font-size: 24px;
+    }
+
+    #start-screen h1 {
+        font-size: 36px;
+    }
+}
+
+/* Анимация змейки */
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+}
+
+/* Скрытие управления на десктопе */
+@media (min-width: 768px) and (hover: hover) {
+    #controls {
+        opacity: 0.3;
+    }
+
+    #controls:hover {
+        opacity: 1;
+    }
+}
