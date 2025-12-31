@@ -216,12 +216,22 @@ function setupCanvas() {
 }
 
 function resizeCanvas() {
-    const container = document.getElementById('game-container');
-    if (!container) return;
+    const gameScreen = document.getElementById('game-screen');
+    if (!gameScreen || gameScreen.classList.contains('hidden')) return;
 
-    // Получаем реальные размеры контейнера
-    const rect = container.getBoundingClientRect();
-    const size = Math.floor(Math.min(rect.width, rect.height));
+    // Рассчитываем доступное пространство
+    const header = document.getElementById('header');
+    const controls = document.getElementById('controls');
+
+    const headerHeight = header ? header.offsetHeight : 0;
+    const controlsHeight = controls ? controls.offsetHeight : 0;
+    const padding = 40; // padding экрана
+
+    const availableHeight = window.innerHeight - headerHeight - controlsHeight - padding;
+    const availableWidth = window.innerWidth - padding;
+
+    // Берём минимальное и делаем квадрат
+    const size = Math.floor(Math.min(availableWidth, availableHeight, 400));
 
     if (size > 0) {
         elements.canvas.width = size;
@@ -402,7 +412,7 @@ function startGame() {
     hideAllOverlays();
 
     // Пересчитываем размер canvas после показа экрана
-    setTimeout(resizeCanvas, 10);
+    setTimeout(resizeCanvas, 50);
 
     // Сброс состояния
     const startX = Math.floor(GRID_SIZE / 2);

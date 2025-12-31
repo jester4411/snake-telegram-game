@@ -417,11 +417,6 @@ body {
 
 #game-container {
     position: relative;
-    width: 100%;
-    aspect-ratio: 1;
-    max-height: 60vh;
-    max-width: 60vh;
-    margin: 0 auto;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -435,8 +430,7 @@ body {
 }
 
 #game-canvas {
-    width: 100%;
-    height: 100%;
+    display: block;
 }
 
 /* ==========================================
