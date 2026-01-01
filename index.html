@@ -54,7 +54,7 @@
             </div>
         </div>
 
-        <!-- Экран выбора уровня -->
+        <!-- Экран выбора уровня для режима уровней -->
         <div id="level-select" class="screen hidden">
             <div class="screen-header">
                 <button class="back-btn" id="btn-back-levels">←</button>
@@ -70,6 +70,18 @@
                 </div>
             </div>
             <div id="levels-grid" class="levels-grid">
+                <!-- Уровни генерируются в JS -->
+            </div>
+        </div>
+
+        <!-- Экран выбора уровня для выживания -->
+        <div id="survival-level-select" class="screen hidden">
+            <div class="screen-header">
+                <button class="back-btn" id="btn-back-survival-levels">←</button>
+                <h2>Выживание: Арена</h2>
+            </div>
+            <p class="survival-hint">Выбери арену для бесконечной игры</p>
+            <div id="survival-levels-grid" class="levels-grid">
                 <!-- Уровни генерируются в JS -->
             </div>
         </div>

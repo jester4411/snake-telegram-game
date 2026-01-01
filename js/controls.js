@@ -3,7 +3,10 @@
 // ==========================================
 
 function setupEventListeners() {
-    document.getElementById('btn-survival').addEventListener('click', startSurvivalMode);
+    document.getElementById('btn-survival').addEventListener('click', () => {
+        generateSurvivalLevelButtons();
+        showScreen('survival-level-select');
+    });
     document.getElementById('btn-levels').addEventListener('click', () => {
         generateLevelButtons();
         showScreen('level-select');
@@ -19,6 +22,7 @@ function setupEventListeners() {
     });
 
     document.getElementById('btn-back-levels').addEventListener('click', () => showScreen('main-menu'));
+    document.getElementById('btn-back-survival-levels').addEventListener('click', () => showScreen('main-menu'));
     document.getElementById('btn-back-leaderboard').addEventListener('click', () => showScreen('main-menu'));
     document.getElementById('btn-back-game').addEventListener('click', pauseGame);
 

@@ -1,5 +1,5 @@
 // ==========================================
-// 🐉 УРОБОРОС - Мифическая змейка v2.7
+// 🐉 УРОБОРОС - Мифическая змейка v2.8
 // ==========================================
 
 const tg = window.Telegram?.WebApp;
@@ -73,6 +73,7 @@ function init() {
 function cacheElements() {
     elements.mainMenu = document.getElementById('main-menu');
     elements.levelSelect = document.getElementById('level-select');
+    elements.survivalLevelSelect = document.getElementById('survival-level-select');
     elements.leaderboard = document.getElementById('leaderboard-screen');
     elements.gameScreen = document.getElementById('game-screen');
     elements.canvas = document.getElementById('game-canvas');
@@ -91,6 +92,7 @@ function cacheElements() {
     elements.levelCompleteScore = document.getElementById('level-complete-score');
     elements.totalScore = document.getElementById('total-score');
     elements.levelsGrid = document.getElementById('levels-grid');
+    elements.survivalLevelsGrid = document.getElementById('survival-levels-grid');
     elements.leaderboardList = document.getElementById('leaderboard-list');
 }
 
@@ -187,6 +189,54 @@ function generateLevelButtons() {
     }
 }
 
+// Генерация кнопок арены для режима выживания (все доступны)
+function generateSurvivalLevelButtons() {
+    elements.survivalLevelsGrid.innerHTML = '';
+
+    // Первая кнопка - пустая арена (уровень 0)
+    const emptyBtn = document.createElement('button');
+    emptyBtn.className = 'level-btn current';
+
+    const emptyCanvas = document.createElement('canvas');
+    emptyCanvas.width = 60;
+    emptyCanvas.height = 60;
+    emptyCanvas.className = 'level-preview';
+    // Пустое превью
+    const ctx = emptyCanvas.getContext('2d');
+    ctx.fillStyle = '#1a1a2e';
+    ctx.fillRect(0, 0, 60, 60);
+    emptyBtn.appendChild(emptyCanvas);
+
+    const emptyNum = document.createElement('span');
+    emptyNum.className = 'level-num';
+    emptyNum.textContent = '∅';
+    emptyBtn.appendChild(emptyNum);
+
+    emptyBtn.addEventListener('click', () => startSurvivalMode(0));
+    elements.survivalLevelsGrid.appendChild(emptyBtn);
+
+    // Остальные уровни
+    for (let i = 1; i <= TOTAL_LEVELS; i++) {
+        const btn = document.createElement('button');
+        btn.className = 'level-btn';
+
+        const canvas = document.createElement('canvas');
+        canvas.width = 60;
+        canvas.height = 60;
+        canvas.className = 'level-preview';
+        drawLevelPreview(canvas, i - 1);
+        btn.appendChild(canvas);
+
+        const num = document.createElement('span');
+        num.className = 'level-num';
+        num.textContent = i;
+        btn.appendChild(num);
+
+        btn.addEventListener('click', () => startSurvivalMode(i));
+        elements.survivalLevelsGrid.appendChild(btn);
+    }
+}
+
 function showLeaderboard(tab = 'survival') {
     showScreen('leaderboard-screen');
     document.querySelectorAll('.tab-btn').forEach(btn => {
@@ -247,13 +297,21 @@ function addRecord(mode, score, level = null) {
 // Запуск игры
 // ==========================================
 
-function startSurvivalMode() {
+function startSurvivalMode(arenaLevel = 0) {
     gameState.mode = 'survival';
-    gameState.currentLevel = 0;
-    gameState.obstacles = [];
+    gameState.currentLevel = arenaLevel;
+
+    // Загружаем препятствия арены если выбран уровень > 0
+    if (arenaLevel > 0 && arenaLevel <= TOTAL_LEVELS) {
+        const config = LEVELS[arenaLevel - 1];
+        gameState.obstacles = [...config.obstacles];
+    } else {
+        gameState.obstacles = [];
+    }
+
     gameState.speed = INITIAL_SPEED;
-    // Устанавливаем максимальный счёт для режима бессмертия
-    gameState.maxScore = GRID_SIZE * GRID_SIZE - 1; // Все клетки кроме головы
+    // Устанавливаем максимальный счёт для режима бессмертия (с учётом препятствий)
+    gameState.maxScore = GRID_SIZE * GRID_SIZE - 1 - gameState.obstacles.length;
     elements.levelInfo.classList.add('hidden');
     startGame();
 }
@@ -293,7 +351,17 @@ function startGame() {
     const startY = Math.floor(GRID_SIZE / 2);
     const safeStart = findSafeStart(startX, startY);
 
+    // Создаём змейку с начальной длиной
     gameState.snake = [safeStart];
+    for (let i = 1; i < INITIAL_SNAKE_LENGTH; i++) {
+        const tailX = safeStart.x - i;
+        // Проверяем что хвост не выходит за границы и не на препятствии
+        const wrappedX = (tailX + GRID_SIZE) % GRID_SIZE;
+        if (!isObstacle(wrappedX, safeStart.y)) {
+            gameState.snake.push({ x: wrappedX, y: safeStart.y });
+        }
+    }
+
     gameState.direction = { x: 1, y: 0 };
     gameState.nextDirection = { x: 1, y: 0 };
     gameState.score = 0;

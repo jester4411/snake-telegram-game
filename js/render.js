@@ -1,6 +1,21 @@
 // ==========================================
-// 🐉 УРОБОРОС - Рендеринг v2.7
+// 🐉 УРОБОРОС - Рендеринг v2.8
 // ==========================================
+
+// Звёзды для фона (генерируются один раз)
+let stars = [];
+function initStars(count = 50) {
+    stars = [];
+    for (let i = 0; i < count; i++) {
+        stars.push({
+            x: Math.random(),
+            y: Math.random(),
+            size: Math.random() * 1.5 + 0.5,
+            twinkle: Math.random() * Math.PI * 2
+        });
+    }
+}
+initStars();
 
 function draw() {
     const ctx = elements.ctx;
@@ -40,6 +55,22 @@ function drawBackground(ctx, canvas) {
     ctx.fillStyle = bgGrad;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
+    // Мерцающие звёзды
+    const time = gameState.time || 0;
+    stars.forEach(star => {
+        const twinkle = 0.3 + Math.sin(time * 2 + star.twinkle) * 0.4;
+        ctx.fillStyle = `rgba(255, 255, 200, ${twinkle})`;
+        ctx.beginPath();
+        ctx.arc(
+            star.x * canvas.width,
+            star.y * canvas.height,
+            star.size,
+            0, Math.PI * 2
+        );
+        ctx.fill();
+    });
+
+    // Сетка
     const cellSize = canvas.width / GRID_SIZE;
     ctx.strokeStyle = 'rgba(255, 215, 0, 0.03)';
     ctx.lineWidth = 1;
@@ -61,23 +92,44 @@ function drawObstacles(ctx, cellSize) {
         const y = obs.y * cellSize;
         const padding = 1;
         const size = cellSize - padding * 2;
+        const cx = x + cellSize / 2;
+        const cy = y + cellSize / 2;
 
+        // Тёмное свечение вокруг
+        const shadowGrad = ctx.createRadialGradient(cx, cy, size * 0.3, cx, cy, size * 0.8);
+        shadowGrad.addColorStop(0, 'rgba(30, 30, 50, 0.8)');
+        shadowGrad.addColorStop(1, 'transparent');
+        ctx.fillStyle = shadowGrad;
+        ctx.beginPath();
+        ctx.arc(cx, cy, size * 0.8, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Основной блок - кристаллический эффект
         const grad = ctx.createLinearGradient(x, y, x + size, y + size);
-        grad.addColorStop(0, '#5a5a7a');
-        grad.addColorStop(0.5, '#3a3a5a');
+        grad.addColorStop(0, '#6a6a8a');
+        grad.addColorStop(0.3, '#4a4a6a');
+        grad.addColorStop(0.7, '#3a3a5a');
         grad.addColorStop(1, '#2a2a4a');
 
         ctx.fillStyle = grad;
         ctx.beginPath();
-        ctx.roundRect(x + padding, y + padding, size, size, 3);
+        ctx.roundRect(x + padding, y + padding, size, size, 4);
         ctx.fill();
 
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
+        // Верхний блик
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.15)';
         ctx.beginPath();
         ctx.roundRect(x + padding + 2, y + padding + 2, size - 4, size / 3, 2);
         ctx.fill();
 
-        ctx.strokeStyle = '#6a6a9a';
+        // Нижняя тень
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
+        ctx.beginPath();
+        ctx.roundRect(x + padding + 2, y + padding + size * 0.65, size - 4, size / 3 - 2, 2);
+        ctx.fill();
+
+        // Рамка
+        ctx.strokeStyle = '#7a7a9a';
         ctx.lineWidth = 1;
         ctx.stroke();
     });
@@ -437,12 +489,9 @@ function drawSnake(ctx, cellSize) {
 
     const realTailIdx = findRealTailIndex();
 
-    // Тень (пропускаем телепортирующие сегменты)
+    // Тень для всех сегментов (обе части змейки видны при телепортации)
     ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
     for (let i = len - 1; i >= 0; i--) {
-        // Пропускаем если это не первый сегмент и есть телепорт к предыдущему
-        if (i < len - 1 && isTeleport(i, i + 1)) continue;
-
         const seg = getCoords(snake[i]);
         const w = getWidth(i) * getBulgeScale(i);
         ctx.beginPath();
@@ -509,9 +558,32 @@ function drawSnake(ctx, cellSize) {
         }
     }
 
-    // Чешуйки (пропускаем телепортирующие сегменты)
+    // Закруглённые заглушки на границах телепортации
+    for (let i = len - 2; i >= 1; i--) {
+        // Если сегмент телепортируется к следующему (к голове) - это конец цепочки
+        if (isTeleport(i, i - 1)) {
+            const seg = getCoords(snake[i]);
+            const progress = i / Math.max(len - 1, 1);
+            const w = getWidth(i) * getBulgeScale(i);
+            const col = getColor(progress);
+
+            const capGrad = ctx.createRadialGradient(seg.x, seg.y, 0, seg.x, seg.y, w / 2);
+            capGrad.addColorStop(0, `rgb(${col.r + 15}, ${col.g + 15}, ${col.b + 10})`);
+            capGrad.addColorStop(0.6, `rgb(${col.r}, ${col.g}, ${col.b})`);
+            capGrad.addColorStop(1, `rgb(${Math.max(0, col.r - 25)}, ${Math.max(0, col.g - 25)}, ${Math.max(0, col.b - 15)})`);
+
+            ctx.fillStyle = capGrad;
+            ctx.beginPath();
+            ctx.arc(seg.x, seg.y, w / 2, 0, Math.PI * 2);
+            ctx.fill();
+        }
+    }
+
+    // Чешуйки (пропускаем сегменты на границе телепортации к голове)
     for (let i = len - 1; i >= 2; i--) {
-        // Пропускаем если этот сегмент телепортируется от предыдущего
+        // Пропускаем если этот сегмент телепортируется к следующему (к голове)
+        if (isTeleport(i, i - 1)) continue;
+        // Также пропускаем если предыдущий сегмент (к хвосту) телепортирован
         if (i < len - 1 && isTeleport(i, i + 1)) continue;
 
         const seg = getCoords(snake[i]);
@@ -603,6 +675,30 @@ function drawSnake(ctx, cellSize) {
         ctx.fill();
 
         ctx.restore();
+    }
+
+    // Свечение вокруг головы
+    if (len > 0) {
+        const head = getCoords(snake[0]);
+        const glowRadius = cellSize * 1.5;
+        const difficulty = gameState.difficulty || DIFFICULTY.NORMAL;
+        let glowColor;
+
+        if (difficulty === DIFFICULTY.IMMORTAL) {
+            glowColor = 'rgba(100, 255, 100, 0.15)';
+        } else if (difficulty === DIFFICULTY.HARDCORE) {
+            glowColor = 'rgba(255, 100, 100, 0.15)';
+        } else {
+            glowColor = 'rgba(255, 215, 0, 0.15)';
+        }
+
+        const headGlow = ctx.createRadialGradient(head.x, head.y, 0, head.x, head.y, glowRadius);
+        headGlow.addColorStop(0, glowColor);
+        headGlow.addColorStop(1, 'transparent');
+        ctx.fillStyle = headGlow;
+        ctx.beginPath();
+        ctx.arc(head.x, head.y, glowRadius, 0, Math.PI * 2);
+        ctx.fill();
     }
 
     // Голова

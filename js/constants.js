@@ -7,6 +7,7 @@ const INITIAL_SPEED = 150;
 const SPEED_INCREASE = 3;
 const MIN_SPEED = 60;
 const TOTAL_LEVELS = 25;
+const INITIAL_SNAKE_LENGTH = 5; // Начальный размер змейки
 
 // Настройки еды
 const FOOD_LIFETIME = 8000;
@@ -79,6 +80,7 @@ const LEVELS = [
     },
     {
         obstacles: [
+            // Арена - угловые стены, центр открыт
             ...Array.from({ length: 5 }, (_, i) => ({ x: 3 + i, y: 3 })),
             ...Array.from({ length: 5 }, (_, i) => ({ x: 12 + i, y: 3 })),
             ...Array.from({ length: 5 }, (_, i) => ({ x: 3 + i, y: 16 })),
@@ -87,8 +89,9 @@ const LEVELS = [
             ...Array.from({ length: 5 }, (_, i) => ({ x: 3, y: 11 + i })),
             ...Array.from({ length: 5 }, (_, i) => ({ x: 16, y: 4 + i })),
             ...Array.from({ length: 5 }, (_, i) => ({ x: 16, y: 11 + i })),
-            { x: 9, y: 9 }, { x: 10, y: 9 },
-            { x: 9, y: 10 }, { x: 10, y: 10 }
+            // Центральные столбы смещены
+            { x: 9, y: 7 }, { x: 10, y: 7 },
+            { x: 9, y: 12 }, { x: 10, y: 12 }
         ],
         speed: 115, name: "Арена"
     },
@@ -107,6 +110,7 @@ const LEVELS = [
     },
     {
         obstacles: [
+            // Храм - центр открыт для спавна
             ...Array.from({ length: 6 }, (_, i) => ({ x: 1 + i, y: 2 })),
             ...Array.from({ length: 6 }, (_, i) => ({ x: 13 + i, y: 2 })),
             ...Array.from({ length: 6 }, (_, i) => ({ x: 1 + i, y: 17 })),
@@ -115,10 +119,13 @@ const LEVELS = [
             ...Array.from({ length: 6 }, (_, i) => ({ x: 2, y: 11 + i })),
             ...Array.from({ length: 6 }, (_, i) => ({ x: 17, y: 3 + i })),
             ...Array.from({ length: 6 }, (_, i) => ({ x: 17, y: 11 + i })),
-            ...Array.from({ length: 4 }, (_, i) => ({ x: 7 + i, y: 7 })),
-            ...Array.from({ length: 4 }, (_, i) => ({ x: 7 + i, y: 12 })),
-            { x: 7, y: 8 }, { x: 7, y: 9 }, { x: 7, y: 10 }, { x: 7, y: 11 },
-            { x: 10, y: 8 }, { x: 10, y: 9 }, { x: 10, y: 10 }, { x: 10, y: 11 }
+            // Внутренние стены - не блокируют центр (10,10)
+            ...Array.from({ length: 4 }, (_, i) => ({ x: 6 + i, y: 6 })),
+            ...Array.from({ length: 4 }, (_, i) => ({ x: 10 + i, y: 6 })),
+            ...Array.from({ length: 4 }, (_, i) => ({ x: 6 + i, y: 13 })),
+            ...Array.from({ length: 4 }, (_, i) => ({ x: 10 + i, y: 13 })),
+            { x: 6, y: 7 }, { x: 6, y: 8 },
+            { x: 13, y: 11 }, { x: 13, y: 12 }
         ],
         speed: 105, name: "Храм Уробороса"
     },
@@ -142,8 +149,11 @@ const LEVELS = [
     },
     {
         obstacles: [
-            ...Array.from({ length: 16 }, (_, i) => ({ x: 2 + i, y: 9 })),
-            ...Array.from({ length: 16 }, (_, i) => ({ x: 2 + i, y: 10 })),
+            // Раскол - две горизонтальные стены с проходом в центре
+            ...Array.from({ length: 7 }, (_, i) => ({ x: 2 + i, y: 9 })),
+            ...Array.from({ length: 7 }, (_, i) => ({ x: 11 + i, y: 9 })),
+            ...Array.from({ length: 7 }, (_, i) => ({ x: 2 + i, y: 10 })),
+            ...Array.from({ length: 7 }, (_, i) => ({ x: 11 + i, y: 10 })),
         ],
         speed: 90, name: "Раскол"
     },
@@ -249,7 +259,7 @@ const LEVELS = [
     },
     {
         obstacles: [
-            // Множество островков
+            // Множество островков - центр свободен для спавна
             { x: 3, y: 3 }, { x: 4, y: 3 }, { x: 3, y: 4 },
             { x: 15, y: 3 }, { x: 16, y: 3 }, { x: 16, y: 4 },
             { x: 3, y: 15 }, { x: 3, y: 16 }, { x: 4, y: 16 },
@@ -258,7 +268,8 @@ const LEVELS = [
             { x: 3, y: 9 }, { x: 3, y: 10 },
             { x: 16, y: 9 }, { x: 16, y: 10 },
             { x: 9, y: 16 }, { x: 10, y: 16 },
-            { x: 9, y: 9 }, { x: 10, y: 9 }, { x: 9, y: 10 }, { x: 10, y: 10 },
+            // Центральный остров смещён выше
+            { x: 9, y: 7 }, { x: 10, y: 7 }, { x: 9, y: 8 }, { x: 10, y: 8 },
             { x: 6, y: 6 }, { x: 13, y: 6 }, { x: 6, y: 13 }, { x: 13, y: 13 },
         ],
         speed: 60, name: "Острова"
@@ -275,16 +286,17 @@ const LEVELS = [
     },
     {
         obstacles: [
-            // Финальный босс - сложный лабиринт
+            // Финальный босс - сложный лабиринт с открытым центром
             ...Array.from({ length: 18 }, (_, i) => ({ x: 1 + i, y: 1 })),
             ...Array.from({ length: 18 }, (_, i) => ({ x: 1 + i, y: 18 })),
             ...Array.from({ length: 16 }, (_, i) => ({ x: 1, y: 2 + i })),
             ...Array.from({ length: 16 }, (_, i) => ({ x: 18, y: 2 + i })),
             ...Array.from({ length: 6 }, (_, i) => ({ x: 4, y: 4 + i })),
             ...Array.from({ length: 6 }, (_, i) => ({ x: 15, y: 10 + i })),
-            ...Array.from({ length: 8 }, (_, i) => ({ x: 6 + i, y: 7 })),
-            ...Array.from({ length: 8 }, (_, i) => ({ x: 6 + i, y: 12 })),
-            { x: 9, y: 9 }, { x: 10, y: 9 }, { x: 9, y: 10 }, { x: 10, y: 10 },
+            ...Array.from({ length: 8 }, (_, i) => ({ x: 6 + i, y: 6 })),
+            ...Array.from({ length: 8 }, (_, i) => ({ x: 6 + i, y: 13 })),
+            // Центральные столбы по бокам
+            { x: 8, y: 9 }, { x: 8, y: 10 }, { x: 11, y: 9 }, { x: 11, y: 10 },
         ],
         speed: 55, name: "Финал Уробороса"
     }
