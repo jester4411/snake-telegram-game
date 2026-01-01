@@ -364,54 +364,69 @@ function drawFoodGolden(ctx, cellSize) {
     }
 }
 
-// Получение цветовой схемы змейки по сложности
+// Получение цветовой схемы змейки по сложности - стиль китайского дракона
 function getSnakeColors() {
     const difficulty = gameState.difficulty || DIFFICULTY.NORMAL;
 
     if (difficulty === DIFFICULTY.IMMORTAL) {
-        // Зеленая змейка
+        // Нефритовый дракон (светло-зеленый с золотом)
         return {
-            headLight: '#66ff66',
-            headMid: '#44dd44',
-            headDark: '#22aa22',
-            bodyBase: { r: 80, g: 200, b: 80 },
-            tailLight: '#55cc55',
-            tailMid: '#44aa44',
-            tailDark: '#338833',
-            eyePupil: ['#22aa22', '#116611', '#004400'],
-            neckLight: '#88ff88',
-            neckMid: '#66dd66',
-            neckDark: '#44aa44'
+            headLight: '#88ffaa',
+            headMid: '#55dd88',
+            headDark: '#33aa66',
+            bodyBase: { r: 100, g: 220, b: 140 },
+            tailLight: '#66dd99',
+            tailMid: '#44bb77',
+            tailDark: '#339966',
+            eyePupil: ['#ffdd00', '#ff9900', '#cc6600'],
+            neckLight: '#99ffbb',
+            neckMid: '#77ee99',
+            neckDark: '#55cc77',
+            maneColor: '#ffcc44',
+            maneColorDark: '#dd9922',
+            hornColor: '#ffdd66',
+            whiskerColor: '#ffcc44',
+            bellyColor: '#aaffcc'
         };
     } else if (difficulty === DIFFICULTY.HARDCORE) {
-        // Красная змейка
+        // Огненный дракон (красный с золотом)
         return {
-            headLight: '#ff6666',
-            headMid: '#dd4444',
-            headDark: '#aa2222',
-            bodyBase: { r: 200, g: 80, b: 80 },
-            tailLight: '#cc5555',
-            tailMid: '#aa4444',
-            tailDark: '#883333',
-            eyePupil: ['#ffcc00', '#cc9900', '#996600'],
-            neckLight: '#ff8888',
-            neckMid: '#dd6666',
-            neckDark: '#aa4444'
+            headLight: '#ff7766',
+            headMid: '#dd5544',
+            headDark: '#aa3322',
+            bodyBase: { r: 200, g: 70, b: 60 },
+            tailLight: '#cc5544',
+            tailMid: '#aa4433',
+            tailDark: '#883322',
+            eyePupil: ['#ffff00', '#ffcc00', '#ff9900'],
+            neckLight: '#ff8877',
+            neckMid: '#dd6655',
+            neckDark: '#aa4433',
+            maneColor: '#ffaa33',
+            maneColorDark: '#dd7711',
+            hornColor: '#ffcc44',
+            whiskerColor: '#ffaa33',
+            bellyColor: '#ffaa88'
         };
     } else {
-        // Золотая змейка (по умолчанию)
+        // Изумрудный дракон (как на картинке - зеленый с оранжевой гривой)
         return {
-            headLight: '#ffe066',
-            headMid: '#ffd700',
-            headDark: '#cc9900',
-            bodyBase: { r: 255, g: 195, b: 45 },
-            tailLight: '#c9941a',
-            tailMid: '#a67c15',
-            tailDark: '#8b6914',
-            eyePupil: ['#ff6600', '#cc3300', '#660000'],
-            neckLight: '#ffe066',
-            neckMid: '#ffd700',
-            neckDark: '#cc9900'
+            headLight: '#7ed67e',
+            headMid: '#5cb85c',
+            headDark: '#3d8b3d',
+            bodyBase: { r: 95, g: 180, b: 95 },
+            tailLight: '#6bc46b',
+            tailMid: '#4ca04c',
+            tailDark: '#3a7a3a',
+            eyePupil: ['#ffdd00', '#ff9900', '#cc5500'],
+            neckLight: '#8ce08c',
+            neckMid: '#6cc86c',
+            neckDark: '#4aa04a',
+            maneColor: '#ffaa44',
+            maneColorDark: '#dd7722',
+            hornColor: '#ffcc55',
+            whiskerColor: '#ffbb44',
+            bellyColor: '#a8e0a8'
         };
     }
 }
@@ -795,7 +810,7 @@ function drawSnake(ctx, cellSize) {
         ctx.restore();
     }
 
-    // Свечение вокруг головы
+    // Свечение вокруг головы - зелёное для дракона
     if (len > 0) {
         const head = getCoords(snake[0]);
         const glowRadius = cellSize * 1.5;
@@ -803,11 +818,12 @@ function drawSnake(ctx, cellSize) {
         let glowColor;
 
         if (difficulty === DIFFICULTY.IMMORTAL) {
-            glowColor = 'rgba(100, 255, 100, 0.15)';
+            glowColor = 'rgba(100, 255, 150, 0.18)';
         } else if (difficulty === DIFFICULTY.HARDCORE) {
-            glowColor = 'rgba(255, 100, 100, 0.15)';
+            glowColor = 'rgba(255, 100, 80, 0.18)';
         } else {
-            glowColor = 'rgba(255, 215, 0, 0.15)';
+            // Зелёное свечение для изумрудного дракона
+            glowColor = 'rgba(100, 200, 100, 0.18)';
         }
 
         const headGlow = ctx.createRadialGradient(head.x, head.y, 0, head.x, head.y, glowRadius);
@@ -886,31 +902,41 @@ function drawSnakeHead(ctx, cellSize, snake, dir, colors, food) {
         ctx.fill();
     }
 
-    // Грива на затылке - направлена НАЗАД (к хвосту)
-    const maneColor1 = colors.headLight;
-    const maneColor2 = colors.headDark;
-    for (let i = 0; i < 7; i++) {
-        const spread = (i - 3) * 0.15; // Распределение по Y (по бокам)
-        const maneLen = headW * (0.5 - Math.abs(i - 3) * 0.05);
-        const startX = -headLen * 0.25;
-        const startY = spread * headW;
-        const endX = startX - maneLen; // Назад (к хвосту)
-        const endY = startY + spread * maneLen * 0.3; // Немного расходятся
+    // Оранжевые шипы гривы вдоль головы и шеи (как на картинке)
+    const maneColor = colors.maneColor || '#ffaa44';
+    const maneColorDark = colors.maneColorDark || '#dd7722';
 
-        const maneGrad = ctx.createLinearGradient(startX, startY, endX, endY);
-        maneGrad.addColorStop(0, maneColor1);
-        maneGrad.addColorStop(1, maneColor2);
-        ctx.fillStyle = maneGrad;
+    // Шипы на затылке - направлены назад и вверх
+    for (let i = 0; i < 8; i++) {
+        const t = i / 7;
+        const spikeX = -headLen * 0.1 - t * headLen * 0.4;
+        const spikeLen = headW * (0.4 + Math.sin(t * Math.PI) * 0.25);
+        const spikeWidth = headW * 0.12;
+
+        // Шипы идут вверх-назад (отрицательный Y - вверх в локальных координатах)
+        const tipX = spikeX - spikeLen * 0.6;
+        const tipY = -spikeLen * 0.8;
+
+        const spikeGrad = ctx.createLinearGradient(spikeX, 0, tipX, tipY);
+        spikeGrad.addColorStop(0, maneColor);
+        spikeGrad.addColorStop(0.6, maneColorDark);
+        spikeGrad.addColorStop(1, '#aa5511');
+
+        ctx.fillStyle = spikeGrad;
         ctx.beginPath();
-        ctx.moveTo(startX, startY - headW * 0.04);
-        ctx.quadraticCurveTo(
-            (startX + endX) / 2, startY + spread * maneLen * 0.15,
-            endX, endY
-        );
-        ctx.quadraticCurveTo(
-            (startX + endX) / 2, startY + spread * maneLen * 0.15 + headW * 0.03,
-            startX, startY + headW * 0.04
-        );
+        ctx.moveTo(spikeX - spikeWidth, 0);
+        ctx.quadraticCurveTo(spikeX - spikeWidth * 0.5, tipY * 0.3, tipX, tipY);
+        ctx.quadraticCurveTo(spikeX + spikeWidth * 0.5, tipY * 0.3, spikeX + spikeWidth, 0);
+        ctx.closePath();
+        ctx.fill();
+
+        // Блик на шипе
+        ctx.fillStyle = 'rgba(255, 255, 200, 0.3)';
+        ctx.beginPath();
+        ctx.moveTo(spikeX - spikeWidth * 0.3, 0);
+        ctx.quadraticCurveTo(spikeX - spikeWidth * 0.2, tipY * 0.2, tipX + spikeWidth * 0.1, tipY * 0.8);
+        ctx.lineTo(spikeX, 0);
+        ctx.closePath();
         ctx.fill();
     }
 
@@ -947,50 +973,59 @@ function drawSnakeHead(ctx, cellSize, snake, dir, colors, food) {
     );
     ctx.fill();
 
-    // Рога дракона - начинаются за глазами, изгибаются назад и вверх
+    // Рога дракона - оленьи, оранжево-золотые как на картинке
+    const hornColor = colors.hornColor || '#ffcc55';
     [1, -1].forEach(side => {
-        // Позиция за глазами (глаза на headW * 0.22)
-        const baseX = -headLen * 0.08;
-        const baseY = side * headW * 0.28;
-        const hornLen = cellSize * 0.65;
+        const baseX = -headLen * 0.05;
+        const baseY = side * headW * 0.32;
+        const hornLen = cellSize * 0.7;
 
-        // Основной рог - толстая линия с градиентом
         ctx.lineCap = 'round';
-        ctx.lineWidth = 4;
+        ctx.lineWidth = 5;
 
         // Тень рога
         ctx.strokeStyle = 'rgba(0, 0, 0, 0.4)';
         ctx.beginPath();
         ctx.moveTo(baseX + 1, baseY + 1);
         ctx.bezierCurveTo(
-            baseX - hornLen * 0.25 + 1, baseY + side * hornLen * 0.15 + 1,
-            baseX - hornLen * 0.5 + 1, baseY + side * hornLen * 0.2 + 1,
-            baseX - hornLen * 0.8 + 1, baseY + side * hornLen * 0.1 + 1
+            baseX - hornLen * 0.3 + 1, baseY + side * hornLen * 0.2 + 1,
+            baseX - hornLen * 0.6 + 1, baseY + side * hornLen * 0.25 + 1,
+            baseX - hornLen * 0.9 + 1, baseY + side * hornLen * 0.15 + 1
         );
         ctx.stroke();
 
-        // Основной рог с градиентом
+        // Основной рог с оранжевым градиентом
         const hornGrad = ctx.createLinearGradient(baseX, baseY, baseX - hornLen, baseY);
-        hornGrad.addColorStop(0, '#D4A84B');
-        hornGrad.addColorStop(0.5, '#8B7355');
-        hornGrad.addColorStop(1, '#5C4033');
+        hornGrad.addColorStop(0, hornColor);
+        hornGrad.addColorStop(0.4, maneColor);
+        hornGrad.addColorStop(1, maneColorDark);
         ctx.strokeStyle = hornGrad;
         ctx.beginPath();
         ctx.moveTo(baseX, baseY);
         ctx.bezierCurveTo(
-            baseX - hornLen * 0.25, baseY + side * hornLen * 0.15,
-            baseX - hornLen * 0.5, baseY + side * hornLen * 0.2,
-            baseX - hornLen * 0.8, baseY + side * hornLen * 0.1
+            baseX - hornLen * 0.3, baseY + side * hornLen * 0.2,
+            baseX - hornLen * 0.6, baseY + side * hornLen * 0.25,
+            baseX - hornLen * 0.9, baseY + side * hornLen * 0.15
         );
         ctx.stroke();
 
-        // Ответвление рога (веточка)
-        ctx.lineWidth = 2.5;
+        // Ответвление рога
+        ctx.lineWidth = 3;
         ctx.beginPath();
-        ctx.moveTo(baseX - hornLen * 0.35, baseY + side * hornLen * 0.16);
+        ctx.moveTo(baseX - hornLen * 0.4, baseY + side * hornLen * 0.22);
         ctx.quadraticCurveTo(
-            baseX - hornLen * 0.45, baseY + side * hornLen * 0.35,
-            baseX - hornLen * 0.5, baseY + side * hornLen * 0.45
+            baseX - hornLen * 0.5, baseY + side * hornLen * 0.4,
+            baseX - hornLen * 0.55, baseY + side * hornLen * 0.5
+        );
+        ctx.stroke();
+
+        // Второе ответвление
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(baseX - hornLen * 0.6, baseY + side * hornLen * 0.24);
+        ctx.quadraticCurveTo(
+            baseX - hornLen * 0.7, baseY + side * hornLen * 0.35,
+            baseX - hornLen * 0.75, baseY + side * hornLen * 0.45
         );
         ctx.stroke();
     });
@@ -1101,35 +1136,47 @@ function drawSnakeHead(ctx, cellSize, snake, dir, colors, food) {
         ctx.fill();
     });
 
-    // Усы дракона (龙须) - направлены назад вдоль тела
-    const whiskerColor = colors.headLight;
-    ctx.strokeStyle = whiskerColor;
-    ctx.lineWidth = 2;
+    // Усы дракона (龙须) - длинные оранжевые как на картинке
+    const whiskerCol = colors.whiskerColor || '#ffbb44';
     ctx.lineCap = 'round';
 
     [1, -1].forEach(side => {
-        // Основной длинный ус - от морды назад
-        const startX = headLen * 0.25;
-        const startY = side * headW * 0.2;
+        const startX = headLen * 0.4;
+        const startY = side * headW * 0.12;
         const wave = whiskerWave * side;
 
+        // Основной длинный ус - изящно изгибается назад
+        ctx.strokeStyle = whiskerCol;
+        ctx.lineWidth = 2.5;
         ctx.beginPath();
         ctx.moveTo(startX, startY);
         ctx.bezierCurveTo(
-            startX - headLen * 0.2, startY + side * headW * 0.15 + wave * headW,
-            startX - headLen * 0.5, startY + side * headW * 0.25 + wave * headW,
-            startX - headLen * 0.8, startY + side * headW * 0.2 + wave * headW * 0.5
+            startX - headLen * 0.3, startY + side * headW * 0.3 + wave * headW,
+            startX - headLen * 0.7, startY + side * headW * 0.5 + wave * headW * 1.5,
+            startX - headLen * 1.2, startY + side * headW * 0.3 + wave * headW
         );
         ctx.stroke();
 
-        // Второй короткий ус - тоже назад
-        ctx.lineWidth = 1.5;
+        // Второй ус - короче
+        ctx.lineWidth = 2;
         ctx.beginPath();
-        ctx.moveTo(startX + headLen * 0.05, startY + side * headW * 0.05);
+        ctx.moveTo(startX - headLen * 0.05, startY + side * headW * 0.08);
         ctx.bezierCurveTo(
-            startX - headLen * 0.1, startY + side * headW * 0.2 + wave * headW * 0.5,
-            startX - headLen * 0.3, startY + side * headW * 0.3 + wave * headW,
-            startX - headLen * 0.5, startY + side * headW * 0.25 + wave * headW * 0.5
+            startX - headLen * 0.25, startY + side * headW * 0.25 + wave * headW * 0.5,
+            startX - headLen * 0.5, startY + side * headW * 0.4 + wave * headW,
+            startX - headLen * 0.8, startY + side * headW * 0.35 + wave * headW * 0.5
+        );
+        ctx.stroke();
+
+        // Блик на основном усе
+        ctx.strokeStyle = 'rgba(255, 255, 200, 0.4)';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(startX, startY - side * 1);
+        ctx.bezierCurveTo(
+            startX - headLen * 0.2, startY + side * headW * 0.25 + wave * headW,
+            startX - headLen * 0.5, startY + side * headW * 0.4 + wave * headW * 1.2,
+            startX - headLen * 0.9, startY + side * headW * 0.28 + wave * headW * 0.8
         );
         ctx.stroke();
     });
