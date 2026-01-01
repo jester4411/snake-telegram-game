@@ -404,9 +404,12 @@ function animate() {
     // Обновляем движение еды по телу (только если игра активна)
     if (!gameState.waitingForInput) {
         gameState.foodBulges = gameState.foodBulges.filter(bulge => {
-            bulge.distanceFromTail += 0.06;
-            // Удаляем когда дошло до конца (хвоста)
-            return bulge.distanceFromTail < gameState.snake.length;
+            // Движение еды по телу (от головы к хвосту)
+            bulge.distanceFromTail -= 0.08; // Движется к хвосту
+            // Progress для анимации выпуклости внутри сегмента
+            bulge.progress = (bulge.distanceFromTail % 1);
+            // Удаляем когда дошло до хвоста
+            return bulge.distanceFromTail > 0;
         });
     }
 
@@ -630,7 +633,7 @@ function nextLevel() {
 }
 
 function retryGame() {
-    if (gameState.mode === 'survival') startSurvivalMode();
+    if (gameState.mode === 'survival') startSurvivalMode(gameState.currentLevel);
     else startLevelMode(gameState.currentLevel);
 }
 
@@ -652,6 +655,11 @@ function resumeGame() {
 }
 
 function quitGame() {
+    // В режиме Бессмертия сохраняем рекорд при выходе
+    if (gameState.mode === 'survival' && gameState.difficulty === DIFFICULTY.IMMORTAL && gameState.score > 0) {
+        addRecord('survival', gameState.score, null);
+    }
+
     gameState.isPlaying = false;
     gameState.isPaused = false;
     gameState.waitingForInput = false;

@@ -441,8 +441,11 @@ function drawSnake(ctx, cellSize) {
         for (const bulge of gameState.foodBulges) {
             if (bulge.distanceFromTail >= 0 && bulge.distanceFromTail < len) {
                 const bulgeSegIndex = len - 1 - Math.floor(bulge.distanceFromTail);
-                if (bulgeSegIndex === segIndex) {
-                    const bulgeAmount = Math.sin(bulge.progress * Math.PI) * 0.35;
+                // Проверяем текущий и соседние сегменты для плавности
+                const dist = Math.abs(bulgeSegIndex - segIndex);
+                if (dist <= 1) {
+                    // Более выраженная выпуклость
+                    const bulgeAmount = Math.sin(bulge.progress * Math.PI) * 0.5 * (dist === 0 ? 1 : 0.5);
                     scale = Math.max(scale, 1 + bulgeAmount);
                 }
             }
@@ -558,20 +561,49 @@ function drawSnake(ctx, cellSize) {
         }
     }
 
-    // Закруглённые заглушки на границах телепортации
-    for (let i = len - 2; i >= 1; i--) {
-        // Если сегмент телепортируется к следующему (к голове) - это конец цепочки
-        if (isTeleport(i, i - 1)) {
-            const seg = getCoords(snake[i]);
+    // Расширения к стенам при телепортации + заглушки
+    for (let i = len - 2; i >= 0; i--) {
+        if (i > 0 && isTeleport(i, i - 1)) {
+            const currSeg = snake[i];
+            const nextSeg = snake[i - 1];
+            const seg = getCoords(currSeg);
             const progress = i / Math.max(len - 1, 1);
             const w = getWidth(i) * getBulgeScale(i);
             const col = getColor(progress);
 
+            // Определяем направление телепортации и рисуем расширение к стене
+            let edgeX = seg.x, edgeY = seg.y;
+            if (currSeg.x === 0 && nextSeg.x === GRID_SIZE - 1) {
+                edgeX = 0; // Левая стена
+            } else if (currSeg.x === GRID_SIZE - 1 && nextSeg.x === 0) {
+                edgeX = cellSize * GRID_SIZE; // Правая стена
+            }
+            if (currSeg.y === 0 && nextSeg.y === GRID_SIZE - 1) {
+                edgeY = 0; // Верхняя стена
+            } else if (currSeg.y === GRID_SIZE - 1 && nextSeg.y === 0) {
+                edgeY = cellSize * GRID_SIZE; // Нижняя стена
+            }
+
+            // Рисуем соединение от сегмента к стене
+            if (edgeX !== seg.x || edgeY !== seg.y) {
+                const grad = ctx.createLinearGradient(seg.x, seg.y, edgeX, edgeY);
+                grad.addColorStop(0, `rgb(${col.r}, ${col.g}, ${col.b})`);
+                grad.addColorStop(1, `rgb(${Math.max(0, col.r - 15)}, ${Math.max(0, col.g - 15)}, ${Math.max(0, col.b - 10)})`);
+                ctx.fillStyle = grad;
+                ctx.beginPath();
+                ctx.moveTo(seg.x - w / 2 * (edgeY !== seg.y ? 1 : 0), seg.y - w / 2 * (edgeX !== seg.x ? 1 : 0));
+                ctx.lineTo(seg.x + w / 2 * (edgeY !== seg.y ? 1 : 0), seg.y + w / 2 * (edgeX !== seg.x ? 1 : 0));
+                ctx.lineTo(edgeX + w / 2 * (edgeY !== seg.y ? 1 : 0), edgeY + w / 2 * (edgeX !== seg.x ? 1 : 0));
+                ctx.lineTo(edgeX - w / 2 * (edgeY !== seg.y ? 1 : 0), edgeY - w / 2 * (edgeX !== seg.x ? 1 : 0));
+                ctx.closePath();
+                ctx.fill();
+            }
+
+            // Заглушка на сегменте
             const capGrad = ctx.createRadialGradient(seg.x, seg.y, 0, seg.x, seg.y, w / 2);
             capGrad.addColorStop(0, `rgb(${col.r + 15}, ${col.g + 15}, ${col.b + 10})`);
             capGrad.addColorStop(0.6, `rgb(${col.r}, ${col.g}, ${col.b})`);
             capGrad.addColorStop(1, `rgb(${Math.max(0, col.r - 25)}, ${Math.max(0, col.g - 25)}, ${Math.max(0, col.b - 15)})`);
-
             ctx.fillStyle = capGrad;
             ctx.beginPath();
             ctx.arc(seg.x, seg.y, w / 2, 0, Math.PI * 2);
@@ -619,25 +651,68 @@ function drawSnake(ctx, cellSize) {
         ctx.restore();
     }
 
-    // Визуализация еды внутри тела
-    for (const bulge of gameState.foodBulges) {
-        if (bulge.distanceFromTail >= 0 && bulge.distanceFromTail < len - 1) {
-            const segIdx = len - 1 - Math.floor(bulge.distanceFromTail);
-            const nextIdx = segIdx + 1;
+    // Визуализация еды внутри тела (светящийся шар) - цвет зависит от сложности
+    const difficulty = gameState.difficulty || DIFFICULTY.NORMAL;
+    let bulgeColors;
+    if (difficulty === DIFFICULTY.IMMORTAL) {
+        // Зеленый для бессмертия
+        bulgeColors = {
+            outer1: 'rgba(100, 255, 150, 0.5)',
+            outer2: 'rgba(50, 200, 100, 0.2)',
+            core1: 'rgba(150, 255, 200, 0.9)',
+            core2: 'rgba(80, 220, 120, 0.7)',
+            core3: 'rgba(50, 180, 80, 0.3)'
+        };
+    } else if (difficulty === DIFFICULTY.HARDCORE) {
+        // Красный для хардкора
+        bulgeColors = {
+            outer1: 'rgba(255, 100, 100, 0.5)',
+            outer2: 'rgba(200, 50, 50, 0.2)',
+            core1: 'rgba(255, 150, 150, 0.9)',
+            core2: 'rgba(220, 80, 80, 0.7)',
+            core3: 'rgba(180, 50, 50, 0.3)'
+        };
+    } else {
+        // Золотой для обычного
+        bulgeColors = {
+            outer1: 'rgba(255, 200, 50, 0.5)',
+            outer2: 'rgba(255, 150, 0, 0.2)',
+            core1: 'rgba(255, 255, 150, 0.9)',
+            core2: 'rgba(255, 220, 80, 0.7)',
+            core3: 'rgba(255, 180, 50, 0.3)'
+        };
+    }
 
-            if (segIdx >= 0 && nextIdx < len && !isTeleport(segIdx, nextIdx)) {
+    for (const bulge of gameState.foodBulges) {
+        if (bulge.distanceFromTail >= 0 && bulge.distanceFromTail < len) {
+            const segIdx = len - 1 - Math.floor(bulge.distanceFromTail);
+            const nextIdx = Math.min(segIdx + 1, len - 1);
+
+            if (segIdx >= 0 && segIdx < len && !isTeleport(segIdx, nextIdx)) {
                 const curr = getCoords(snake[segIdx]);
-                const next = getCoords(snake[nextIdx]);
+                const next = segIdx !== nextIdx ? getCoords(snake[nextIdx]) : curr;
                 const localProgress = bulge.distanceFromTail % 1;
 
                 const x = curr.x + (next.x - curr.x) * localProgress;
                 const y = curr.y + (next.y - curr.y) * localProgress;
-                const w = getWidth(segIdx) * 0.5;
+                const bulgeIntensity = Math.sin(bulge.progress * Math.PI);
+                const w = getWidth(segIdx) * (0.4 + bulgeIntensity * 0.3);
 
+                // Свечение вокруг еды
+                const outerGlow = ctx.createRadialGradient(x, y, 0, x, y, w * 2);
+                outerGlow.addColorStop(0, bulgeColors.outer1);
+                outerGlow.addColorStop(0.5, bulgeColors.outer2);
+                outerGlow.addColorStop(1, 'transparent');
+                ctx.fillStyle = outerGlow;
+                ctx.beginPath();
+                ctx.arc(x, y, w * 2, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Ядро еды
                 const foodGrad = ctx.createRadialGradient(x, y, 0, x, y, w);
-                foodGrad.addColorStop(0, 'rgba(255, 220, 100, 0.7)');
-                foodGrad.addColorStop(0.5, 'rgba(255, 180, 50, 0.4)');
-                foodGrad.addColorStop(1, 'rgba(255, 150, 0, 0)');
+                foodGrad.addColorStop(0, bulgeColors.core1);
+                foodGrad.addColorStop(0.4, bulgeColors.core2);
+                foodGrad.addColorStop(1, bulgeColors.core3);
 
                 ctx.fillStyle = foodGrad;
                 ctx.beginPath();
@@ -702,10 +777,10 @@ function drawSnake(ctx, cellSize) {
     }
 
     // Голова
-    drawSnakeHead(ctx, cellSize, snake, dir, colors);
+    drawSnakeHead(ctx, cellSize, snake, dir, colors, gameState.food);
 }
 
-function drawSnakeHead(ctx, cellSize, snake, dir, colors) {
+function drawSnakeHead(ctx, cellSize, snake, dir, colors, food) {
     if (snake.length < 1) return;
 
     const head = snake[0];
@@ -721,14 +796,30 @@ function drawSnakeHead(ctx, cellSize, snake, dir, colors) {
     else if (dir.y === -1) angle = -Math.PI / 2;
     else angle = Math.PI / 2;
 
+    // Вычисляем направление взгляда к еде
+    let lookX = 0, lookY = 0;
+    if (food) {
+        const fx = food.x * cellSize + cellSize / 2;
+        const fy = food.y * cellSize + cellSize / 2;
+        const foodAngle = Math.atan2(fy - hy, fx - hx);
+        const relativeAngle = foodAngle - angle; // Угол относительно направления головы
+        // Ограничиваем смещение зрачка
+        const maxOffset = 0.35;
+        lookX = Math.cos(relativeAngle) * maxOffset;
+        lookY = Math.sin(relativeAngle) * maxOffset;
+    }
+
     const isEating = gameState.isEating;
-    const mouthOpen = isEating ? Math.sin((12 - gameState.eatingTimer) / 12 * Math.PI) * 0.3 : 0;
+    // Анимация: голова приподнимается спереди и заглатывает
+    const eatProgress = isEating ? Math.sin((12 - gameState.eatingTimer) / 12 * Math.PI) : 0;
+    const headLift = eatProgress * 0.25; // Подъём передней части (более выраженный)
+    const headScale = 1 + eatProgress * 0.18; // Значительное увеличение при глотании
 
     ctx.save();
     ctx.translate(hx, hy);
     ctx.rotate(angle);
 
-    // Тень
+    // Тень (смещается при поедании)
     ctx.fillStyle = 'rgba(0, 0, 0, 0.25)';
     ctx.beginPath();
     ctx.moveTo(-headLen * 0.4, 0);
@@ -750,49 +841,47 @@ function drawSnakeHead(ctx, cellSize, snake, dir, colors) {
         ctx.fill();
     }
 
-    // Голова с открытым ртом
-    if (isEating && mouthOpen > 0.1) {
-        const jawOffset = headW * mouthOpen;
-
+    // Голова при поедании - приподнимается спереди
+    if (isEating && eatProgress > 0.1) {
+        // Поворачиваем голову вокруг задней части (приподнимаем морду)
         ctx.save();
-        ctx.translate(0, -jawOffset * 0.5);
-        const upperGrad = ctx.createLinearGradient(-headLen * 0.4, 0, headLen * 0.6, 0);
-        upperGrad.addColorStop(0, colors.headMid);
-        upperGrad.addColorStop(0.5, colors.headLight);
-        upperGrad.addColorStop(1, colors.headDark);
-        ctx.fillStyle = upperGrad;
+        ctx.translate(-headLen * 0.2, 0);
+        ctx.rotate(-headLift); // Отрицательный угол = морда вверх
+        ctx.translate(headLen * 0.2, 0);
+        ctx.scale(headScale, headScale);
+
+        // Основная голова (приподнятая)
+        const headGrad = ctx.createLinearGradient(-headLen * 0.4, 0, headLen * 0.6, 0);
+        headGrad.addColorStop(0, colors.headMid);
+        headGrad.addColorStop(0.3, colors.headLight);
+        headGrad.addColorStop(0.6, colors.headMid);
+        headGrad.addColorStop(1, colors.headDark);
+
+        ctx.fillStyle = headGrad;
         ctx.beginPath();
         ctx.moveTo(-headLen * 0.35, 0);
-        ctx.quadraticCurveTo(-headLen * 0.3, -headW * 0.35, headLen * 0.1, -headW * 0.3);
-        ctx.quadraticCurveTo(headLen * 0.5, -headW * 0.1, headLen * 0.55, 0);
-        ctx.lineTo(-headLen * 0.35, 0);
+        ctx.quadraticCurveTo(-headLen * 0.3, -headW * 0.45, headLen * 0.1, -headW * 0.4);
+        ctx.quadraticCurveTo(headLen * 0.5, -headW * 0.2, headLen * 0.55, 0);
+        ctx.quadraticCurveTo(headLen * 0.5, headW * 0.2, headLen * 0.1, headW * 0.4);
+        ctx.quadraticCurveTo(-headLen * 0.3, headW * 0.45, -headLen * 0.35, 0);
         ctx.fill();
+
+        // Открытый рот снизу (виден когда голова приподнята)
+        const mouthOpen = eatProgress * headW * 0.45; // Широко раскрытый рот
+        ctx.fillStyle = '#2a0a0a';
+        ctx.beginPath();
+        ctx.ellipse(headLen * 0.35, headW * 0.2, headLen * 0.2, mouthOpen, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Язык (более заметный)
+        if (eatProgress > 0.2) {
+            ctx.fillStyle = '#dd5555';
+            ctx.beginPath();
+            ctx.ellipse(headLen * 0.32, headW * 0.15, headLen * 0.12, mouthOpen * 0.5, 0, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
         ctx.restore();
-
-        ctx.save();
-        ctx.translate(0, jawOffset * 0.5);
-        const lowerGrad = ctx.createLinearGradient(-headLen * 0.4, 0, headLen * 0.6, 0);
-        lowerGrad.addColorStop(0, colors.headDark);
-        lowerGrad.addColorStop(0.5, colors.headMid);
-        lowerGrad.addColorStop(1, colors.headDark);
-        ctx.fillStyle = lowerGrad;
-        ctx.beginPath();
-        ctx.moveTo(-headLen * 0.35, 0);
-        ctx.lineTo(headLen * 0.55, 0);
-        ctx.quadraticCurveTo(headLen * 0.5, headW * 0.1, headLen * 0.1, headW * 0.3);
-        ctx.quadraticCurveTo(-headLen * 0.3, headW * 0.35, -headLen * 0.35, 0);
-        ctx.fill();
-        ctx.restore();
-
-        ctx.fillStyle = '#4a1a1a';
-        ctx.beginPath();
-        ctx.ellipse(headLen * 0.3, 0, headLen * 0.2, jawOffset, 0, 0, Math.PI * 2);
-        ctx.fill();
-
-        ctx.fillStyle = '#cc4444';
-        ctx.beginPath();
-        ctx.ellipse(headLen * 0.25, 0, headLen * 0.1, jawOffset * 0.5, 0, 0, Math.PI * 2);
-        ctx.fill();
     } else {
         const headGrad = ctx.createLinearGradient(-headLen * 0.4, 0, headLen * 0.6, 0);
         headGrad.addColorStop(0, colors.headMid);
@@ -813,44 +902,54 @@ function drawSnakeHead(ctx, cellSize, snake, dir, colors) {
     // Блик
     ctx.fillStyle = 'rgba(255, 255, 255, 0.25)';
     ctx.beginPath();
-    ctx.ellipse(0, -headW * 0.15 - (isEating ? mouthOpen * headW * 0.3 : 0), headLen * 0.25, headW * 0.1, 0, 0, Math.PI * 2);
+    ctx.ellipse(0, -headW * 0.15, headLen * 0.25, headW * 0.1, 0, 0, Math.PI * 2);
     ctx.fill();
 
     // Чешуйки на голове
     ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
     ctx.beginPath();
-    ctx.ellipse(-headLen * 0.1, -headW * 0.1 - (isEating ? mouthOpen * headW * 0.2 : 0), headLen * 0.12, headLen * 0.08, -0.2, Math.PI, 0);
+    ctx.ellipse(-headLen * 0.1, -headW * 0.1, headLen * 0.12, headLen * 0.08, -0.2, Math.PI, 0);
     ctx.fill();
     ctx.beginPath();
-    ctx.ellipse(headLen * 0.05, -headW * 0.08 - (isEating ? mouthOpen * headW * 0.2 : 0), headLen * 0.1, headLen * 0.06, -0.2, Math.PI, 0);
+    ctx.ellipse(headLen * 0.05, -headW * 0.08, headLen * 0.1, headLen * 0.06, -0.2, Math.PI, 0);
     ctx.fill();
 
     // Глаза
     const eyeX = headLen * 0.05;
     const eyeY = headW * 0.22;
     const eyeR = headW * 0.18;
-    const eyeOffset = isEating ? mouthOpen * headW * 0.3 : 0;
 
-    [eyeY + eyeOffset, -eyeY - eyeOffset].forEach(y => {
+    // Смещение зрачка к еде (в локальных координатах глаза)
+    const pupilOffsetX = lookX * eyeR * 0.6;
+    const pupilOffsetY = lookY * eyeR * 0.5;
+
+    [eyeY, -eyeY].forEach(y => {
+        // Обводка глаза
         ctx.fillStyle = '#2a2a2a';
         ctx.beginPath();
         ctx.ellipse(eyeX, y, eyeR + 1, eyeR * 0.85 + 1, 0, 0, Math.PI * 2);
         ctx.fill();
 
+        // Белок глаза
         ctx.fillStyle = '#fffef5';
         ctx.beginPath();
         ctx.ellipse(eyeX, y, eyeR, eyeR * 0.85, 0, 0, Math.PI * 2);
         ctx.fill();
 
-        const pupilGrad = ctx.createRadialGradient(eyeX, y, 0, eyeX, y, eyeR * 0.5);
+        // Зрачок (смещается к еде) - оба глаза смотрят в одном направлении
+        const pupilGrad = ctx.createRadialGradient(
+            eyeX + pupilOffsetX, y + pupilOffsetY, 0,
+            eyeX + pupilOffsetX, y + pupilOffsetY, eyeR * 0.5
+        );
         pupilGrad.addColorStop(0, colors.eyePupil[0]);
         pupilGrad.addColorStop(0.5, colors.eyePupil[1]);
         pupilGrad.addColorStop(1, colors.eyePupil[2]);
         ctx.fillStyle = pupilGrad;
         ctx.beginPath();
-        ctx.ellipse(eyeX + 1, y, eyeR * 0.25, eyeR * 0.7, 0, 0, Math.PI * 2);
+        ctx.ellipse(eyeX + pupilOffsetX, y + pupilOffsetY, eyeR * 0.25, eyeR * 0.7, 0, 0, Math.PI * 2);
         ctx.fill();
 
+        // Блик на глазу (статичный, не следит за едой)
         ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
         ctx.beginPath();
         ctx.arc(eyeX - eyeR * 0.25, y - eyeR * 0.2, eyeR * 0.2, 0, Math.PI * 2);
@@ -860,10 +959,10 @@ function drawSnakeHead(ctx, cellSize, snake, dir, colors) {
     // Ноздри
     ctx.fillStyle = '#2a2a2a';
     ctx.beginPath();
-    ctx.ellipse(headLen * 0.4, -headW * 0.08 - eyeOffset * 0.5, 1.5, 2, 0, 0, Math.PI * 2);
+    ctx.ellipse(headLen * 0.4, -headW * 0.08, 1.5, 2, 0, 0, Math.PI * 2);
     ctx.fill();
     ctx.beginPath();
-    ctx.ellipse(headLen * 0.4, headW * 0.08 + eyeOffset * 0.5, 1.5, 2, 0, 0, Math.PI * 2);
+    ctx.ellipse(headLen * 0.4, headW * 0.08, 1.5, 2, 0, 0, Math.PI * 2);
     ctx.fill();
 
     ctx.restore();

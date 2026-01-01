@@ -7,7 +7,7 @@ const INITIAL_SPEED = 150;
 const SPEED_INCREASE = 3;
 const MIN_SPEED = 60;
 const TOTAL_LEVELS = 25;
-const INITIAL_SNAKE_LENGTH = 5; // Начальный размер змейки
+const INITIAL_SNAKE_LENGTH = 4; // Начальный размер змейки
 
 // Настройки еды
 const FOOD_LIFETIME = 8000;
@@ -132,18 +132,31 @@ const LEVELS = [
     // 11-15: Сложные
     {
         obstacles: [
-            ...Array.from({ length: 18 }, (_, i) => ({ x: 1 + i, y: 5 })),
-            ...Array.from({ length: 18 }, (_, i) => ({ x: 1 + i, y: 14 })),
+            // Верхняя стена с проходами
+            ...Array.from({ length: 7 }, (_, i) => ({ x: 1 + i, y: 5 })),
+            ...Array.from({ length: 7 }, (_, i) => ({ x: 12 + i, y: 5 })),
+            // Нижняя стена с проходами
+            ...Array.from({ length: 7 }, (_, i) => ({ x: 1 + i, y: 14 })),
+            ...Array.from({ length: 7 }, (_, i) => ({ x: 12 + i, y: 14 })),
+            // Центральный блок
             { x: 9, y: 9 }, { x: 10, y: 9 }, { x: 9, y: 10 }, { x: 10, y: 10 }
         ],
         speed: 100, name: "Тиски"
     },
     {
         obstacles: [
-            ...Array.from({ length: 10 }, (_, i) => ({ x: 5 + i, y: 5 })),
-            ...Array.from({ length: 10 }, (_, i) => ({ x: 5 + i, y: 14 })),
-            ...Array.from({ length: 8 }, (_, i) => ({ x: 5, y: 6 + i })),
-            ...Array.from({ length: 8 }, (_, i) => ({ x: 14, y: 6 + i }))
+            // Верхняя стена с проходом посередине
+            ...Array.from({ length: 4 }, (_, i) => ({ x: 5 + i, y: 5 })),
+            ...Array.from({ length: 4 }, (_, i) => ({ x: 11 + i, y: 5 })),
+            // Нижняя стена с проходом посередине
+            ...Array.from({ length: 4 }, (_, i) => ({ x: 5 + i, y: 14 })),
+            ...Array.from({ length: 4 }, (_, i) => ({ x: 11 + i, y: 14 })),
+            // Левая стена с проходом
+            ...Array.from({ length: 3 }, (_, i) => ({ x: 5, y: 6 + i })),
+            ...Array.from({ length: 3 }, (_, i) => ({ x: 5, y: 11 + i })),
+            // Правая стена с проходом
+            ...Array.from({ length: 3 }, (_, i) => ({ x: 14, y: 6 + i })),
+            ...Array.from({ length: 3 }, (_, i) => ({ x: 14, y: 11 + i }))
         ],
         speed: 95, name: "Клетка"
     },
@@ -171,10 +184,19 @@ const LEVELS = [
     },
     {
         obstacles: [
-            ...Array.from({ length: 8 }, (_, i) => ({ x: 6 + i, y: 4 })),
-            ...Array.from({ length: 8 }, (_, i) => ({ x: 6 + i, y: 15 })),
-            ...Array.from({ length: 10 }, (_, i) => ({ x: 4, y: 5 + i })),
-            ...Array.from({ length: 10 }, (_, i) => ({ x: 15, y: 5 + i })),
+            // Верхняя стена с проходами
+            ...Array.from({ length: 3 }, (_, i) => ({ x: 6 + i, y: 4 })),
+            ...Array.from({ length: 3 }, (_, i) => ({ x: 11 + i, y: 4 })),
+            // Нижняя стена с проходами
+            ...Array.from({ length: 3 }, (_, i) => ({ x: 6 + i, y: 15 })),
+            ...Array.from({ length: 3 }, (_, i) => ({ x: 11 + i, y: 15 })),
+            // Левая стена с проходом
+            ...Array.from({ length: 4 }, (_, i) => ({ x: 4, y: 5 + i })),
+            ...Array.from({ length: 4 }, (_, i) => ({ x: 4, y: 11 + i })),
+            // Правая стена с проходом
+            ...Array.from({ length: 4 }, (_, i) => ({ x: 15, y: 5 + i })),
+            ...Array.from({ length: 4 }, (_, i) => ({ x: 15, y: 11 + i })),
+            // Центральный блок
             { x: 9, y: 9 }, { x: 10, y: 9 }, { x: 9, y: 10 }, { x: 10, y: 10 }
         ],
         speed: 80, name: "Осада"
@@ -193,10 +215,19 @@ const LEVELS = [
     },
     {
         obstacles: [
-            ...Array.from({ length: 14 }, (_, i) => ({ x: 3 + i, y: 3 })),
-            ...Array.from({ length: 14 }, (_, i) => ({ x: 3 + i, y: 16 })),
-            ...Array.from({ length: 12 }, (_, i) => ({ x: 3, y: 4 + i })),
-            ...Array.from({ length: 12 }, (_, i) => ({ x: 16, y: 4 + i })),
+            // Верхняя стена с проходами
+            ...Array.from({ length: 5 }, (_, i) => ({ x: 3 + i, y: 3 })),
+            ...Array.from({ length: 5 }, (_, i) => ({ x: 12 + i, y: 3 })),
+            // Нижняя стена с проходами
+            ...Array.from({ length: 5 }, (_, i) => ({ x: 3 + i, y: 16 })),
+            ...Array.from({ length: 5 }, (_, i) => ({ x: 12 + i, y: 16 })),
+            // Левая стена с проходом
+            ...Array.from({ length: 5 }, (_, i) => ({ x: 3, y: 4 + i })),
+            ...Array.from({ length: 5 }, (_, i) => ({ x: 3, y: 11 + i })),
+            // Правая стена с проходом
+            ...Array.from({ length: 5 }, (_, i) => ({ x: 16, y: 4 + i })),
+            ...Array.from({ length: 5 }, (_, i) => ({ x: 16, y: 11 + i })),
+            // Внутренние стены
             ...Array.from({ length: 6 }, (_, i) => ({ x: 7 + i, y: 7 })),
             ...Array.from({ length: 6 }, (_, i) => ({ x: 7 + i, y: 12 })),
         ],
@@ -224,14 +255,21 @@ const LEVELS = [
     },
     {
         obstacles: [
-            // Спираль из центра
-            { x: 9, y: 9 }, { x: 10, y: 9 }, { x: 10, y: 10 }, { x: 9, y: 10 },
-            ...Array.from({ length: 4 }, (_, i) => ({ x: 8 + i, y: 8 })),
-            ...Array.from({ length: 5 }, (_, i) => ({ x: 12, y: 8 + i })),
-            ...Array.from({ length: 5 }, (_, i) => ({ x: 7 + i, y: 12 })),
-            ...Array.from({ length: 6 }, (_, i) => ({ x: 7, y: 6 + i })),
-            ...Array.from({ length: 7 }, (_, i) => ({ x: 6 + i, y: 6 })),
-            ...Array.from({ length: 8 }, (_, i) => ({ x: 13, y: 5 + i })),
+            // Спираль с проходами
+            { x: 9, y: 9 }, { x: 10, y: 9 },
+            // Верхняя часть спирали
+            ...Array.from({ length: 3 }, (_, i) => ({ x: 8 + i, y: 7 })),
+            // Правая часть спирали
+            ...Array.from({ length: 3 }, (_, i) => ({ x: 12, y: 7 + i })),
+            ...Array.from({ length: 2 }, (_, i) => ({ x: 12, y: 12 + i })),
+            // Нижняя часть спирали
+            ...Array.from({ length: 3 }, (_, i) => ({ x: 7 + i, y: 13 })),
+            // Левая часть спирали
+            ...Array.from({ length: 3 }, (_, i) => ({ x: 6, y: 7 + i })),
+            ...Array.from({ length: 2 }, (_, i) => ({ x: 6, y: 12 + i })),
+            // Внешний контур
+            ...Array.from({ length: 5 }, (_, i) => ({ x: 5 + i, y: 5 })),
+            ...Array.from({ length: 5 }, (_, i) => ({ x: 14, y: 5 + i })),
         ],
         speed: 68, name: "Водоворот"
     },
@@ -246,14 +284,24 @@ const LEVELS = [
     },
     {
         obstacles: [
-            ...Array.from({ length: 16 }, (_, i) => ({ x: 2 + i, y: 2 })),
-            ...Array.from({ length: 16 }, (_, i) => ({ x: 2 + i, y: 17 })),
-            ...Array.from({ length: 14 }, (_, i) => ({ x: 2, y: 3 + i })),
-            ...Array.from({ length: 14 }, (_, i) => ({ x: 17, y: 3 + i })),
-            ...Array.from({ length: 8 }, (_, i) => ({ x: 6 + i, y: 6 })),
-            ...Array.from({ length: 8 }, (_, i) => ({ x: 6 + i, y: 13 })),
-            ...Array.from({ length: 6 }, (_, i) => ({ x: 6, y: 7 + i })),
-            ...Array.from({ length: 6 }, (_, i) => ({ x: 13, y: 7 + i })),
+            // Внешний периметр с проходами
+            ...Array.from({ length: 6 }, (_, i) => ({ x: 2 + i, y: 2 })),
+            ...Array.from({ length: 6 }, (_, i) => ({ x: 12 + i, y: 2 })),
+            ...Array.from({ length: 6 }, (_, i) => ({ x: 2 + i, y: 17 })),
+            ...Array.from({ length: 6 }, (_, i) => ({ x: 12 + i, y: 17 })),
+            ...Array.from({ length: 5 }, (_, i) => ({ x: 2, y: 3 + i })),
+            ...Array.from({ length: 5 }, (_, i) => ({ x: 2, y: 12 + i })),
+            ...Array.from({ length: 5 }, (_, i) => ({ x: 17, y: 3 + i })),
+            ...Array.from({ length: 5 }, (_, i) => ({ x: 17, y: 12 + i })),
+            // Внутренний контур с проходами
+            ...Array.from({ length: 3 }, (_, i) => ({ x: 6 + i, y: 6 })),
+            ...Array.from({ length: 3 }, (_, i) => ({ x: 11 + i, y: 6 })),
+            ...Array.from({ length: 3 }, (_, i) => ({ x: 6 + i, y: 13 })),
+            ...Array.from({ length: 3 }, (_, i) => ({ x: 11 + i, y: 13 })),
+            ...Array.from({ length: 2 }, (_, i) => ({ x: 6, y: 7 + i })),
+            ...Array.from({ length: 2 }, (_, i) => ({ x: 6, y: 11 + i })),
+            ...Array.from({ length: 2 }, (_, i) => ({ x: 13, y: 7 + i })),
+            ...Array.from({ length: 2 }, (_, i) => ({ x: 13, y: 11 + i })),
         ],
         speed: 62, name: "Крепость"
     },
@@ -286,13 +334,22 @@ const LEVELS = [
     },
     {
         obstacles: [
-            // Финальный босс - сложный лабиринт с открытым центром
-            ...Array.from({ length: 18 }, (_, i) => ({ x: 1 + i, y: 1 })),
-            ...Array.from({ length: 18 }, (_, i) => ({ x: 1 + i, y: 18 })),
-            ...Array.from({ length: 16 }, (_, i) => ({ x: 1, y: 2 + i })),
-            ...Array.from({ length: 16 }, (_, i) => ({ x: 18, y: 2 + i })),
-            ...Array.from({ length: 6 }, (_, i) => ({ x: 4, y: 4 + i })),
-            ...Array.from({ length: 6 }, (_, i) => ({ x: 15, y: 10 + i })),
+            // Финальный босс - сложный лабиринт с проходами
+            // Верхняя стена с проходом
+            ...Array.from({ length: 7 }, (_, i) => ({ x: 1 + i, y: 1 })),
+            ...Array.from({ length: 7 }, (_, i) => ({ x: 12 + i, y: 1 })),
+            // Нижняя стена с проходом
+            ...Array.from({ length: 7 }, (_, i) => ({ x: 1 + i, y: 18 })),
+            ...Array.from({ length: 7 }, (_, i) => ({ x: 12 + i, y: 18 })),
+            // Левая стена с проходом
+            ...Array.from({ length: 6 }, (_, i) => ({ x: 1, y: 2 + i })),
+            ...Array.from({ length: 6 }, (_, i) => ({ x: 1, y: 12 + i })),
+            // Правая стена с проходом
+            ...Array.from({ length: 6 }, (_, i) => ({ x: 18, y: 2 + i })),
+            ...Array.from({ length: 6 }, (_, i) => ({ x: 18, y: 12 + i })),
+            // Внутренние стены
+            ...Array.from({ length: 5 }, (_, i) => ({ x: 4, y: 4 + i })),
+            ...Array.from({ length: 5 }, (_, i) => ({ x: 15, y: 11 + i })),
             ...Array.from({ length: 8 }, (_, i) => ({ x: 6 + i, y: 6 })),
             ...Array.from({ length: 8 }, (_, i) => ({ x: 6 + i, y: 13 })),
             // Центральные столбы по бокам
