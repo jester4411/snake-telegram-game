@@ -369,44 +369,44 @@ function getSnakeColors() {
     const difficulty = gameState.difficulty || DIFFICULTY.NORMAL;
 
     if (difficulty === DIFFICULTY.IMMORTAL) {
-        // Нефритовый дракон (светло-зеленый с золотом)
+        // Нефритовый/бирюзовый дракон - яркий и светлый
         return {
-            headLight: '#88ffaa',
-            headMid: '#55dd88',
-            headDark: '#33aa66',
-            bodyBase: { r: 100, g: 220, b: 140 },
-            tailLight: '#66dd99',
-            tailMid: '#44bb77',
-            tailDark: '#339966',
-            eyePupil: ['#ffdd00', '#ff9900', '#cc6600'],
-            neckLight: '#99ffbb',
-            neckMid: '#77ee99',
-            neckDark: '#55cc77',
-            maneColor: '#ffcc44',
-            maneColorDark: '#dd9922',
-            hornColor: '#ffdd66',
-            whiskerColor: '#ffcc44',
-            bellyColor: '#aaffcc'
+            headLight: '#66ffcc',
+            headMid: '#33ddaa',
+            headDark: '#22aa88',
+            bodyBase: { r: 80, g: 220, b: 180 },
+            tailLight: '#55eebb',
+            tailMid: '#33cc99',
+            tailDark: '#229977',
+            eyePupil: ['#ffffff', '#aaffee', '#66ddbb'],
+            neckLight: '#88ffdd',
+            neckMid: '#55eebb',
+            neckDark: '#33cc99',
+            maneColor: '#aaffee',
+            maneColorDark: '#66ddcc',
+            hornColor: '#ccffee',
+            whiskerColor: '#88ffdd',
+            bellyColor: '#bbffee'
         };
     } else if (difficulty === DIFFICULTY.HARDCORE) {
-        // Огненный дракон (красный с золотом)
+        // Огненный/кровавый дракон - агрессивный красный
         return {
-            headLight: '#ff7766',
-            headMid: '#dd5544',
-            headDark: '#aa3322',
-            bodyBase: { r: 200, g: 70, b: 60 },
-            tailLight: '#cc5544',
-            tailMid: '#aa4433',
-            tailDark: '#883322',
-            eyePupil: ['#ffff00', '#ffcc00', '#ff9900'],
-            neckLight: '#ff8877',
-            neckMid: '#dd6655',
-            neckDark: '#aa4433',
-            maneColor: '#ffaa33',
-            maneColorDark: '#dd7711',
-            hornColor: '#ffcc44',
-            whiskerColor: '#ffaa33',
-            bellyColor: '#ffaa88'
+            headLight: '#ff5544',
+            headMid: '#cc3322',
+            headDark: '#991111',
+            bodyBase: { r: 180, g: 50, b: 40 },
+            tailLight: '#bb4433',
+            tailMid: '#992222',
+            tailDark: '#771111',
+            eyePupil: ['#ffff00', '#ff6600', '#ff0000'],
+            neckLight: '#ff6655',
+            neckMid: '#dd4433',
+            neckDark: '#aa2222',
+            maneColor: '#ff6633',
+            maneColorDark: '#cc3311',
+            hornColor: '#ff8844',
+            whiskerColor: '#ff5522',
+            bellyColor: '#ff9988'
         };
     } else {
         // Изумрудный дракон (как на картинке - зеленый с оранжевой гривой)
@@ -713,13 +713,13 @@ function drawSnake(ctx, cellSize) {
     const difficulty = gameState.difficulty || DIFFICULTY.NORMAL;
     let bulgeColors;
     if (difficulty === DIFFICULTY.IMMORTAL) {
-        // Зеленый для бессмертия
+        // Бирюзовый для бессмертия
         bulgeColors = {
-            outer1: 'rgba(100, 255, 150, 0.5)',
-            outer2: 'rgba(50, 200, 100, 0.2)',
-            core1: 'rgba(150, 255, 200, 0.9)',
-            core2: 'rgba(80, 220, 120, 0.7)',
-            core3: 'rgba(50, 180, 80, 0.3)'
+            outer1: 'rgba(100, 255, 220, 0.5)',
+            outer2: 'rgba(50, 200, 180, 0.2)',
+            core1: 'rgba(180, 255, 240, 0.9)',
+            core2: 'rgba(100, 220, 200, 0.7)',
+            core3: 'rgba(60, 180, 160, 0.3)'
         };
     } else if (difficulty === DIFFICULTY.HARDCORE) {
         // Красный для хардкора
@@ -818,9 +818,11 @@ function drawSnake(ctx, cellSize) {
         let glowColor;
 
         if (difficulty === DIFFICULTY.IMMORTAL) {
-            glowColor = 'rgba(100, 255, 150, 0.18)';
+            // Бирюзовое свечение для нефритового дракона
+            glowColor = 'rgba(100, 255, 220, 0.2)';
         } else if (difficulty === DIFFICULTY.HARDCORE) {
-            glowColor = 'rgba(255, 100, 80, 0.18)';
+            // Красное свечение для огненного дракона
+            glowColor = 'rgba(255, 80, 60, 0.2)';
         } else {
             // Зелёное свечение для изумрудного дракона
             glowColor = 'rgba(100, 200, 100, 0.18)';
