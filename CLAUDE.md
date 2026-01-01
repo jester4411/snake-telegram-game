@@ -60,28 +60,29 @@ snake-telegram-game/
 - `spawnFood()` - генерация еды в свободной клетке
 - `pauseGame()`, `resumeGame()`, `quitGame()` - управление состоянием
 
-### js/render.js (~900 lines)
-- `renderGame()` - главная функция отрисовки (requestAnimationFrame)
-- `drawGrid()` - сетка с координатами клеток
-- `drawObstacles()` - препятствия уровня (камни)
-- `drawSnake()` - тело змейки с текстурой чешуи
-- `drawSnakeHead()` (line ~708) - голова с анимацией поедания:
-  - `eatProgress` - прогресс анимации (0-1)
-  - `headLift` - приподнятие передней части
-  - `headScale` - увеличение при глотании
+### js/render.js (~1000 lines)
+- `draw()` - главная функция отрисовки (вызывается из requestAnimationFrame)
+- `drawBackground()` - фон с мерцающими звёздами и сеткой
+- `drawObstacles()` - препятствия уровня (кристаллические блоки)
 - `drawFood()` - еда с таймером исчезновения (5 стадий)
-- `drawJoints()` - круглые соединения на поворотах
-- `getFoodColors()` - цвета еды по сложности:
-  - IMMORTAL: зеленые цветы
-  - NORMAL: золотой шар
-  - HARDCORE: красные рубины
+- `getSnakeColors()` - цветовая схема змейки по сложности:
+  - IMMORTAL: бирюзовый/нефритовый дракон
+  - NORMAL: изумрудно-зелёный с оранжевой гривой
+  - HARDCORE: огненно-красный дракон
+- `drawSnake()` - тело змейки с чешуёй и анимацией выпуклости еды
+- `drawSnakeHead()` - голова китайского дракона:
+  - Рога (оленьи, с ответвлениями)
+  - Грива (8 шипов, направленных назад)
+  - Усы (длинные, с анимацией волны)
+  - Глаза (круглые, следят за едой)
+  - Анимация поедания (открытый рот, язык)
 
 ## Key Concepts
 
 ### Difficulty Modes
-- **IMMORTAL** (Бессмертие): сквозь стены и хвост, зеленые цветы, макс счёт = клетки
-- **NORMAL** (Обычный): сквозь стены, смерть от хвоста, золотой шар
-- **HARDCORE** (Хардкор): смерть от стен и хвоста, красные рубины
+- **IMMORTAL** (Бессмертие): сквозь стены и хвост, бирюзовый дракон, макс счёт = клетки
+- **NORMAL** (Обычный): сквозь стены, смерть от хвоста, изумрудный дракон с оранжевой гривой
+- **HARDCORE** (Хардкор): смерть от стен и хвоста, огненно-красный дракон
 
 ### Game Modes
 - **Survival**: Endless mode with increasing speed
@@ -94,11 +95,16 @@ Game starts paused, waiting for first swipe/arrow. Snake only starts moving afte
 - `setInterval` for game ticks (movement) - speed depends on level/difficulty
 - `requestAnimationFrame` for smooth 60fps rendering
 
-### Snake Rendering
-- Triangular head with eating animation (head lifts and mouth opens underneath)
+### Snake Rendering (Chinese Dragon Style)
+- **Head coordinate system**: After `ctx.rotate(angle)`, +X = forward (direction of movement), -X = backward
+- Head shape: широкий лоб, вытянутая морда (bezier curves)
+- Mane spikes: 8 orange spikes on top, pointing backward (`tipX = spikeX - spikeLen * 0.6`)
+- Antler horns: branching horns starting behind eyes (`baseY = side * headW * 0.32`)
+- Whiskers: long curves flowing backward with wave animation
 - Body segments with scale texture and 3D gradients
 - Circular joints at turns to prevent gaps
 - Food bulge animation: uses `distanceFromTail` to track position as snake grows
+- Color scheme changes per difficulty (getSnakeColors returns bodyBase, maneColor, hornColor, etc.)
 
 ### Food System
 5-stage fading timer (8 seconds total), respawns if not eaten. Colors depend on difficulty mode.
@@ -117,7 +123,12 @@ Problematic patterns to avoid:
 - CSS `touch-action: none` and `overscroll-behavior: none` to block browser scrolling
 
 ## Recent Changes (v2.8)
+- Chinese dragon visual style: antler horns, orange mane spikes, flowing whiskers
+- Distinct snake colors per difficulty:
+  - IMMORTAL: cyan/turquoise jade dragon with white eyes
+  - NORMAL: emerald green dragon with orange mane
+  - HARDCORE: fiery red/crimson dragon with flame eyes
+- Matching glow colors around head per difficulty
 - Fixed eating animation: head lifts up from front and swallows from above
 - Initial snake length: 4 segments (was 5)
 - Fixed levels 11, 12, 15, 17, 20, 22, 25 to ensure all cells are reachable
-- Added passages to closed boxes and walls
