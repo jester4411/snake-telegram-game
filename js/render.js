@@ -945,46 +945,51 @@ function drawSnakeHead(ctx, cellSize, snake, dir, colors, food) {
     );
     ctx.fill();
 
-    // Рога дракона (небольшие оленьи)
-    const hornColor = '#8B7355';
-    const hornHighlight = '#C4A76C';
+    // Рога дракона - оленьи, изгибаются назад
     [1, -1].forEach(side => {
-        const hornBaseX = -headLen * 0.15;
-        const hornBaseY = side * headW * 0.35;
-        const hornLen = headW * 0.5;
+        const baseX = -headLen * 0.05;
+        const baseY = side * headW * 0.4;
+        const hornLen = cellSize * 0.7;
 
-        // Тень рога
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+        // Основной рог - толстая линия с градиентом
+        ctx.lineCap = 'round';
+        ctx.lineWidth = 4;
+
+        // Тень
+        ctx.strokeStyle = 'rgba(0, 0, 0, 0.4)';
         ctx.beginPath();
-        ctx.moveTo(hornBaseX, hornBaseY);
-        ctx.quadraticCurveTo(
-            hornBaseX - hornLen * 0.3, hornBaseY + side * hornLen * 0.6,
-            hornBaseX - hornLen * 0.5, hornBaseY + side * hornLen * 0.9
+        ctx.moveTo(baseX + 1, baseY + 1);
+        ctx.bezierCurveTo(
+            baseX - hornLen * 0.3 + 1, baseY + side * hornLen * 0.1 + 1,
+            baseX - hornLen * 0.6 + 1, baseY + side * hornLen * 0.05 + 1,
+            baseX - hornLen * 0.9 + 1, baseY - side * hornLen * 0.1 + 1
         );
-        ctx.quadraticCurveTo(
-            hornBaseX - hornLen * 0.2, hornBaseY + side * hornLen * 0.5,
-            hornBaseX + headW * 0.08, hornBaseY
-        );
-        ctx.fill();
+        ctx.stroke();
 
         // Основной рог
-        const hornGrad = ctx.createLinearGradient(hornBaseX, hornBaseY, hornBaseX - hornLen * 0.4, hornBaseY + side * hornLen);
-        hornGrad.addColorStop(0, hornHighlight);
-        hornGrad.addColorStop(0.5, hornColor);
-        hornGrad.addColorStop(1, '#5C4A3D');
-        ctx.fillStyle = hornGrad;
+        const hornGrad = ctx.createLinearGradient(baseX, baseY, baseX - hornLen, baseY);
+        hornGrad.addColorStop(0, '#D4A84B');
+        hornGrad.addColorStop(0.5, '#8B7355');
+        hornGrad.addColorStop(1, '#5C4033');
+        ctx.strokeStyle = hornGrad;
         ctx.beginPath();
-        ctx.moveTo(hornBaseX, hornBaseY);
-        ctx.quadraticCurveTo(
-            hornBaseX - hornLen * 0.25, hornBaseY + side * hornLen * 0.5,
-            hornBaseX - hornLen * 0.4, hornBaseY + side * hornLen * 0.85
+        ctx.moveTo(baseX, baseY);
+        ctx.bezierCurveTo(
+            baseX - hornLen * 0.3, baseY + side * hornLen * 0.1,
+            baseX - hornLen * 0.6, baseY + side * hornLen * 0.05,
+            baseX - hornLen * 0.9, baseY - side * hornLen * 0.1
         );
-        ctx.lineTo(hornBaseX - hornLen * 0.35, hornBaseY + side * hornLen * 0.8);
+        ctx.stroke();
+
+        // Ответвление рога
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        ctx.moveTo(baseX - hornLen * 0.4, baseY + side * hornLen * 0.08);
         ctx.quadraticCurveTo(
-            hornBaseX - hornLen * 0.15, hornBaseY + side * hornLen * 0.4,
-            hornBaseX + headW * 0.06, hornBaseY
+            baseX - hornLen * 0.5, baseY + side * hornLen * 0.25,
+            baseX - hornLen * 0.55, baseY + side * hornLen * 0.35
         );
-        ctx.fill();
+        ctx.stroke();
     });
 
     // Надбровные гребни (как у китайского дракона)
