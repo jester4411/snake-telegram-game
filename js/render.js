@@ -886,28 +886,30 @@ function drawSnakeHead(ctx, cellSize, snake, dir, colors, food) {
         ctx.fill();
     }
 
-    // Грива на затылке (перья дракона)
+    // Грива на затылке - направлена НАЗАД (к хвосту)
     const maneColor1 = colors.headLight;
     const maneColor2 = colors.headDark;
-    for (let i = 0; i < 5; i++) {
-        const maneAngle = (i - 2) * 0.25;
-        const maneLen = headW * (0.4 + Math.abs(2 - i) * 0.1);
-        const maneX = -headLen * 0.35 - Math.cos(maneAngle) * maneLen * 0.5;
-        const maneY = Math.sin(maneAngle) * maneLen;
+    for (let i = 0; i < 7; i++) {
+        const spread = (i - 3) * 0.15; // Распределение по Y (по бокам)
+        const maneLen = headW * (0.5 - Math.abs(i - 3) * 0.05);
+        const startX = -headLen * 0.25;
+        const startY = spread * headW;
+        const endX = startX - maneLen; // Назад (к хвосту)
+        const endY = startY + spread * maneLen * 0.3; // Немного расходятся
 
-        const maneGrad = ctx.createLinearGradient(-headLen * 0.25, 0, maneX, maneY);
+        const maneGrad = ctx.createLinearGradient(startX, startY, endX, endY);
         maneGrad.addColorStop(0, maneColor1);
         maneGrad.addColorStop(1, maneColor2);
         ctx.fillStyle = maneGrad;
         ctx.beginPath();
-        ctx.moveTo(-headLen * 0.25, maneAngle * headW * 0.3);
+        ctx.moveTo(startX, startY - headW * 0.04);
         ctx.quadraticCurveTo(
-            -headLen * 0.4, maneY * 0.5,
-            maneX, maneY
+            (startX + endX) / 2, startY + spread * maneLen * 0.15,
+            endX, endY
         );
         ctx.quadraticCurveTo(
-            -headLen * 0.35, maneY * 0.3,
-            -headLen * 0.25, maneAngle * headW * 0.3
+            (startX + endX) / 2, startY + spread * maneLen * 0.15 + headW * 0.03,
+            startX, startY + headW * 0.04
         );
         ctx.fill();
     }
@@ -945,28 +947,29 @@ function drawSnakeHead(ctx, cellSize, snake, dir, colors, food) {
     );
     ctx.fill();
 
-    // Рога дракона - оленьи, изгибаются назад
+    // Рога дракона - начинаются за глазами, изгибаются назад и вверх
     [1, -1].forEach(side => {
-        const baseX = -headLen * 0.05;
-        const baseY = side * headW * 0.4;
-        const hornLen = cellSize * 0.7;
+        // Позиция за глазами (глаза на headW * 0.22)
+        const baseX = -headLen * 0.08;
+        const baseY = side * headW * 0.28;
+        const hornLen = cellSize * 0.65;
 
         // Основной рог - толстая линия с градиентом
         ctx.lineCap = 'round';
         ctx.lineWidth = 4;
 
-        // Тень
+        // Тень рога
         ctx.strokeStyle = 'rgba(0, 0, 0, 0.4)';
         ctx.beginPath();
         ctx.moveTo(baseX + 1, baseY + 1);
         ctx.bezierCurveTo(
-            baseX - hornLen * 0.3 + 1, baseY + side * hornLen * 0.1 + 1,
-            baseX - hornLen * 0.6 + 1, baseY + side * hornLen * 0.05 + 1,
-            baseX - hornLen * 0.9 + 1, baseY - side * hornLen * 0.1 + 1
+            baseX - hornLen * 0.25 + 1, baseY + side * hornLen * 0.15 + 1,
+            baseX - hornLen * 0.5 + 1, baseY + side * hornLen * 0.2 + 1,
+            baseX - hornLen * 0.8 + 1, baseY + side * hornLen * 0.1 + 1
         );
         ctx.stroke();
 
-        // Основной рог
+        // Основной рог с градиентом
         const hornGrad = ctx.createLinearGradient(baseX, baseY, baseX - hornLen, baseY);
         hornGrad.addColorStop(0, '#D4A84B');
         hornGrad.addColorStop(0.5, '#8B7355');
@@ -975,19 +978,19 @@ function drawSnakeHead(ctx, cellSize, snake, dir, colors, food) {
         ctx.beginPath();
         ctx.moveTo(baseX, baseY);
         ctx.bezierCurveTo(
-            baseX - hornLen * 0.3, baseY + side * hornLen * 0.1,
-            baseX - hornLen * 0.6, baseY + side * hornLen * 0.05,
-            baseX - hornLen * 0.9, baseY - side * hornLen * 0.1
+            baseX - hornLen * 0.25, baseY + side * hornLen * 0.15,
+            baseX - hornLen * 0.5, baseY + side * hornLen * 0.2,
+            baseX - hornLen * 0.8, baseY + side * hornLen * 0.1
         );
         ctx.stroke();
 
-        // Ответвление рога
+        // Ответвление рога (веточка)
         ctx.lineWidth = 2.5;
         ctx.beginPath();
-        ctx.moveTo(baseX - hornLen * 0.4, baseY + side * hornLen * 0.08);
+        ctx.moveTo(baseX - hornLen * 0.35, baseY + side * hornLen * 0.16);
         ctx.quadraticCurveTo(
-            baseX - hornLen * 0.5, baseY + side * hornLen * 0.25,
-            baseX - hornLen * 0.55, baseY + side * hornLen * 0.35
+            baseX - hornLen * 0.45, baseY + side * hornLen * 0.35,
+            baseX - hornLen * 0.5, baseY + side * hornLen * 0.45
         );
         ctx.stroke();
     });
