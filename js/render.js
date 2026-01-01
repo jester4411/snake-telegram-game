@@ -1101,35 +1101,35 @@ function drawSnakeHead(ctx, cellSize, snake, dir, colors, food) {
         ctx.fill();
     });
 
-    // Усы дракона (龙须) - длинные и изящные
+    // Усы дракона (龙须) - направлены назад вдоль тела
     const whiskerColor = colors.headLight;
     ctx.strokeStyle = whiskerColor;
     ctx.lineWidth = 2;
     ctx.lineCap = 'round';
 
     [1, -1].forEach(side => {
-        // Основной длинный ус
-        const startX = headLen * 0.35;
-        const startY = side * headW * 0.15;
+        // Основной длинный ус - от морды назад
+        const startX = headLen * 0.25;
+        const startY = side * headW * 0.2;
         const wave = whiskerWave * side;
 
         ctx.beginPath();
         ctx.moveTo(startX, startY);
         ctx.bezierCurveTo(
-            startX + headLen * 0.3, startY + side * headW * 0.1 + wave * headW,
-            startX + headLen * 0.5, startY + side * headW * 0.25 + wave * headW * 2,
-            startX + headLen * 0.7, startY + side * headW * 0.15 + wave * headW
+            startX - headLen * 0.2, startY + side * headW * 0.15 + wave * headW,
+            startX - headLen * 0.5, startY + side * headW * 0.25 + wave * headW,
+            startX - headLen * 0.8, startY + side * headW * 0.2 + wave * headW * 0.5
         );
         ctx.stroke();
 
-        // Второй короткий ус
+        // Второй короткий ус - тоже назад
         ctx.lineWidth = 1.5;
         ctx.beginPath();
-        ctx.moveTo(startX - headLen * 0.05, startY + side * headW * 0.08);
+        ctx.moveTo(startX + headLen * 0.05, startY + side * headW * 0.05);
         ctx.bezierCurveTo(
-            startX + headLen * 0.15, startY + side * headW * 0.2 + wave * headW * 0.5,
-            startX + headLen * 0.25, startY + side * headW * 0.3 + wave * headW,
-            startX + headLen * 0.35, startY + side * headW * 0.25 + wave * headW * 0.5
+            startX - headLen * 0.1, startY + side * headW * 0.2 + wave * headW * 0.5,
+            startX - headLen * 0.3, startY + side * headW * 0.3 + wave * headW,
+            startX - headLen * 0.5, startY + side * headW * 0.25 + wave * headW * 0.5
         );
         ctx.stroke();
     });
