@@ -830,9 +830,9 @@ function drawSnakeHead(ctx, cellSize, snake, dir, colors, food) {
     const hx = head.x * cellSize + cellSize / 2;
     const hy = head.y * cellSize + cellSize / 2;
 
-    // Более вытянутая элегантная голова
-    const headLen = cellSize * 1.4;
-    const headW = cellSize * 0.75;
+    // Голова китайского дракона - длиннее и величественнее
+    const headLen = cellSize * 1.5;
+    const headW = cellSize * 0.8;
 
     let angle = 0;
     if (dir.x === 1) angle = 0;
@@ -847,7 +847,7 @@ function drawSnakeHead(ctx, cellSize, snake, dir, colors, food) {
         const fy = food.y * cellSize + cellSize / 2;
         const foodAngle = Math.atan2(fy - hy, fx - hx);
         const relativeAngle = foodAngle - angle;
-        const maxOffset = 0.4;
+        const maxOffset = 0.35;
         lookX = Math.cos(relativeAngle) * maxOffset;
         lookY = Math.sin(relativeAngle) * maxOffset;
     }
@@ -855,6 +855,10 @@ function drawSnakeHead(ctx, cellSize, snake, dir, colors, food) {
     const isEating = gameState.isEating;
     const eatProgress = isEating ? Math.sin((12 - gameState.eatingTimer) / 12 * Math.PI) : 0;
     const headScale = 1 + eatProgress * 0.08;
+
+    // Анимация усов
+    const time = Date.now() / 1000;
+    const whiskerWave = Math.sin(time * 2) * 0.1;
 
     ctx.save();
     ctx.translate(hx, hy);
@@ -867,22 +871,48 @@ function drawSnakeHead(ctx, cellSize, snake, dir, colors, food) {
     // Тень под головой
     ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
     ctx.beginPath();
-    ctx.ellipse(headLen * 0.1, 3, headLen * 0.55, headW * 0.45, 0, 0, Math.PI * 2);
+    ctx.ellipse(headLen * 0.1, 4, headLen * 0.6, headW * 0.5, 0, 0, Math.PI * 2);
     ctx.fill();
 
-    // Шея - плавный переход
+    // Шея - плавный переход с гривой
     if (snake.length > 1) {
-        const neckGrad = ctx.createRadialGradient(-headLen * 0.3, 0, 0, -headLen * 0.3, 0, headW * 0.5);
+        const neckGrad = ctx.createRadialGradient(-headLen * 0.3, 0, 0, -headLen * 0.3, 0, headW * 0.55);
         neckGrad.addColorStop(0, colors.neckLight);
         neckGrad.addColorStop(0.6, colors.neckMid);
         neckGrad.addColorStop(1, colors.neckDark);
         ctx.fillStyle = neckGrad;
         ctx.beginPath();
-        ctx.ellipse(-headLen * 0.3, 0, headW * 0.45, headW * 0.45, 0, 0, Math.PI * 2);
+        ctx.ellipse(-headLen * 0.3, 0, headW * 0.5, headW * 0.5, 0, 0, Math.PI * 2);
         ctx.fill();
     }
 
-    // Основная форма головы - овальная с заострённым носом
+    // Грива на затылке (перья дракона)
+    const maneColor1 = colors.headLight;
+    const maneColor2 = colors.headDark;
+    for (let i = 0; i < 5; i++) {
+        const maneAngle = (i - 2) * 0.25;
+        const maneLen = headW * (0.4 + Math.abs(2 - i) * 0.1);
+        const maneX = -headLen * 0.35 - Math.cos(maneAngle) * maneLen * 0.5;
+        const maneY = Math.sin(maneAngle) * maneLen;
+
+        const maneGrad = ctx.createLinearGradient(-headLen * 0.25, 0, maneX, maneY);
+        maneGrad.addColorStop(0, maneColor1);
+        maneGrad.addColorStop(1, maneColor2);
+        ctx.fillStyle = maneGrad;
+        ctx.beginPath();
+        ctx.moveTo(-headLen * 0.25, maneAngle * headW * 0.3);
+        ctx.quadraticCurveTo(
+            -headLen * 0.4, maneY * 0.5,
+            maneX, maneY
+        );
+        ctx.quadraticCurveTo(
+            -headLen * 0.35, maneY * 0.3,
+            -headLen * 0.25, maneAngle * headW * 0.3
+        );
+        ctx.fill();
+    }
+
+    // Основная форма головы - более прямоугольная как у китайского дракона
     const headGrad = ctx.createLinearGradient(-headLen * 0.3, -headW * 0.5, headLen * 0.3, headW * 0.5);
     headGrad.addColorStop(0, colors.headLight);
     headGrad.addColorStop(0.3, colors.headMid);
@@ -891,47 +921,97 @@ function drawSnakeHead(ctx, cellSize, snake, dir, colors, food) {
 
     ctx.fillStyle = headGrad;
     ctx.beginPath();
-    // Плавная форма головы
-    ctx.moveTo(-headLen * 0.35, 0);
+    // Форма головы дракона - широкий лоб, вытянутая морда
+    ctx.moveTo(-headLen * 0.3, 0);
     ctx.bezierCurveTo(
-        -headLen * 0.35, -headW * 0.5,
-        headLen * 0.1, -headW * 0.45,
+        -headLen * 0.3, -headW * 0.55,
+        -headLen * 0.05, -headW * 0.5,
+        headLen * 0.15, -headW * 0.35
+    );
+    ctx.bezierCurveTo(
+        headLen * 0.35, -headW * 0.25,
+        headLen * 0.5, -headW * 0.1,
         headLen * 0.55, 0
     );
     ctx.bezierCurveTo(
-        headLen * 0.1, headW * 0.45,
-        -headLen * 0.35, headW * 0.5,
-        -headLen * 0.35, 0
+        headLen * 0.5, headW * 0.1,
+        headLen * 0.35, headW * 0.25,
+        headLen * 0.15, headW * 0.35
+    );
+    ctx.bezierCurveTo(
+        -headLen * 0.05, headW * 0.5,
+        -headLen * 0.3, headW * 0.55,
+        -headLen * 0.3, 0
     );
     ctx.fill();
 
-    // Верхняя часть головы (выпуклость для глаз)
-    const topGrad = ctx.createLinearGradient(0, -headW * 0.4, 0, 0);
-    topGrad.addColorStop(0, colors.headLight);
-    topGrad.addColorStop(1, 'transparent');
-    ctx.fillStyle = topGrad;
-    ctx.beginPath();
-    ctx.ellipse(-headLen * 0.05, -headW * 0.15, headLen * 0.35, headW * 0.3, 0, Math.PI, 0);
-    ctx.fill();
+    // Рога дракона (небольшие оленьи)
+    const hornColor = '#8B7355';
+    const hornHighlight = '#C4A76C';
+    [1, -1].forEach(side => {
+        const hornBaseX = -headLen * 0.15;
+        const hornBaseY = side * headW * 0.35;
+        const hornLen = headW * 0.5;
 
-    // Надбровные дуги
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.15)';
-    ctx.beginPath();
-    ctx.ellipse(-headLen * 0.05, -headW * 0.28, headLen * 0.2, headW * 0.08, 0, Math.PI, 0);
-    ctx.fill();
-    ctx.beginPath();
-    ctx.ellipse(-headLen * 0.05, headW * 0.28, headLen * 0.2, headW * 0.08, 0, 0, Math.PI);
-    ctx.fill();
+        // Тень рога
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+        ctx.beginPath();
+        ctx.moveTo(hornBaseX, hornBaseY);
+        ctx.quadraticCurveTo(
+            hornBaseX - hornLen * 0.3, hornBaseY + side * hornLen * 0.6,
+            hornBaseX - hornLen * 0.5, hornBaseY + side * hornLen * 0.9
+        );
+        ctx.quadraticCurveTo(
+            hornBaseX - hornLen * 0.2, hornBaseY + side * hornLen * 0.5,
+            hornBaseX + headW * 0.08, hornBaseY
+        );
+        ctx.fill();
 
-    // Блик на голове
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
+        // Основной рог
+        const hornGrad = ctx.createLinearGradient(hornBaseX, hornBaseY, hornBaseX - hornLen * 0.4, hornBaseY + side * hornLen);
+        hornGrad.addColorStop(0, hornHighlight);
+        hornGrad.addColorStop(0.5, hornColor);
+        hornGrad.addColorStop(1, '#5C4A3D');
+        ctx.fillStyle = hornGrad;
+        ctx.beginPath();
+        ctx.moveTo(hornBaseX, hornBaseY);
+        ctx.quadraticCurveTo(
+            hornBaseX - hornLen * 0.25, hornBaseY + side * hornLen * 0.5,
+            hornBaseX - hornLen * 0.4, hornBaseY + side * hornLen * 0.85
+        );
+        ctx.lineTo(hornBaseX - hornLen * 0.35, hornBaseY + side * hornLen * 0.8);
+        ctx.quadraticCurveTo(
+            hornBaseX - hornLen * 0.15, hornBaseY + side * hornLen * 0.4,
+            hornBaseX + headW * 0.06, hornBaseY
+        );
+        ctx.fill();
+    });
+
+    // Надбровные гребни (как у китайского дракона)
+    ctx.fillStyle = colors.headMid;
+    [1, -1].forEach(side => {
+        ctx.beginPath();
+        ctx.moveTo(-headLen * 0.1, side * headW * 0.25);
+        ctx.quadraticCurveTo(
+            headLen * 0.05, side * headW * 0.35,
+            headLen * 0.15, side * headW * 0.28
+        );
+        ctx.quadraticCurveTo(
+            headLen * 0.05, side * headW * 0.25,
+            -headLen * 0.1, side * headW * 0.25
+        );
+        ctx.fill();
+    });
+
+    // Блик на лбу
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.25)';
     ctx.beginPath();
-    ctx.ellipse(headLen * 0.05, -headW * 0.2, headLen * 0.15, headW * 0.08, -0.2, 0, Math.PI * 2);
+    ctx.ellipse(-headLen * 0.05, 0, headLen * 0.12, headW * 0.15, 0, 0, Math.PI * 2);
     ctx.fill();
 
     // Рот при поедании
     if (isEating && eatProgress > 0.1) {
-        const mouthOpen = eatProgress * headW * 0.25;
+        const mouthOpen = eatProgress * headW * 0.3;
 
         // Тёмная полость рта
         ctx.fillStyle = '#200808';
@@ -944,16 +1024,15 @@ function drawSnakeHead(ctx, cellSize, snake, dir, colors, food) {
 
         // Раздвоенный язык
         if (eatProgress > 0.25) {
-            const tongueLen = eatProgress * headLen * 0.35;
-            const forkLen = headW * 0.12;
+            const tongueLen = eatProgress * headLen * 0.4;
+            const forkLen = headW * 0.15;
             ctx.strokeStyle = '#cc3333';
-            ctx.lineWidth = 2;
+            ctx.lineWidth = 2.5;
             ctx.lineCap = 'round';
 
             ctx.beginPath();
             ctx.moveTo(headLen * 0.45, 0);
             ctx.lineTo(headLen * 0.45 + tongueLen * 0.7, 0);
-            // Развилка
             ctx.moveTo(headLen * 0.45 + tongueLen * 0.7, 0);
             ctx.lineTo(headLen * 0.45 + tongueLen, -forkLen);
             ctx.moveTo(headLen * 0.45 + tongueLen * 0.7, 0);
@@ -962,65 +1041,104 @@ function drawSnakeHead(ctx, cellSize, snake, dir, colors, food) {
         }
     }
 
-    // Глаза - крупнее и выразительнее
-    const eyeX = -headLen * 0.02;
-    const eyeY = headW * 0.25;
-    const eyeR = headW * 0.22;
+    // Глаза - большие и круглые как у китайского дракона
+    const eyeX = headLen * 0.02;
+    const eyeY = headW * 0.22;
+    const eyeR = headW * 0.2;
 
-    const pupilOffsetX = lookX * eyeR * 0.5;
+    const pupilOffsetX = lookX * eyeR * 0.4;
     const pupilOffsetY = lookY * eyeR * 0.4;
 
     [eyeY, -eyeY].forEach(y => {
         // Впадина для глаза
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.25)';
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
         ctx.beginPath();
-        ctx.ellipse(eyeX, y, eyeR + 3, eyeR * 0.9 + 2, 0, 0, Math.PI * 2);
+        ctx.ellipse(eyeX, y, eyeR + 4, eyeR + 3, 0, 0, Math.PI * 2);
         ctx.fill();
 
-        // Глазное яблоко
+        // Глазное яблоко - чисто белое
         const eyeGrad = ctx.createRadialGradient(eyeX - eyeR * 0.2, y - eyeR * 0.2, 0, eyeX, y, eyeR);
-        eyeGrad.addColorStop(0, '#fffff5');
-        eyeGrad.addColorStop(0.8, '#f5f5e0');
-        eyeGrad.addColorStop(1, '#d5d5c0');
+        eyeGrad.addColorStop(0, '#ffffff');
+        eyeGrad.addColorStop(0.7, '#f8f8f0');
+        eyeGrad.addColorStop(1, '#e0e0d0');
         ctx.fillStyle = eyeGrad;
         ctx.beginPath();
-        ctx.ellipse(eyeX, y, eyeR, eyeR * 0.85, 0, 0, Math.PI * 2);
+        ctx.arc(eyeX, y, eyeR, 0, Math.PI * 2);
         ctx.fill();
 
-        // Вертикальный зрачок (змеиный)
+        // Круглый зрачок (как у дракона, не змеиный)
         const pupilGrad = ctx.createRadialGradient(
             eyeX + pupilOffsetX, y + pupilOffsetY, 0,
-            eyeX + pupilOffsetX, y + pupilOffsetY, eyeR * 0.45
+            eyeX + pupilOffsetX, y + pupilOffsetY, eyeR * 0.55
         );
         pupilGrad.addColorStop(0, colors.eyePupil[0]);
-        pupilGrad.addColorStop(0.4, colors.eyePupil[1]);
+        pupilGrad.addColorStop(0.5, colors.eyePupil[1]);
         pupilGrad.addColorStop(1, colors.eyePupil[2]);
         ctx.fillStyle = pupilGrad;
         ctx.beginPath();
-        // Вертикальный эллипс для змеиного зрачка
-        ctx.ellipse(eyeX + pupilOffsetX, y + pupilOffsetY, eyeR * 0.15, eyeR * 0.65, 0, 0, Math.PI * 2);
+        // Круглый зрачок
+        ctx.arc(eyeX + pupilOffsetX, y + pupilOffsetY, eyeR * 0.5, 0, Math.PI * 2);
         ctx.fill();
 
         // Блик
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
         ctx.beginPath();
-        ctx.arc(eyeX - eyeR * 0.3, y - eyeR * 0.25, eyeR * 0.18, 0, Math.PI * 2);
+        ctx.arc(eyeX - eyeR * 0.25, y - eyeR * 0.25, eyeR * 0.22, 0, Math.PI * 2);
         ctx.fill();
 
         // Второй маленький блик
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
         ctx.beginPath();
-        ctx.arc(eyeX + eyeR * 0.2, y + eyeR * 0.3, eyeR * 0.08, 0, Math.PI * 2);
+        ctx.arc(eyeX + eyeR * 0.2, y + eyeR * 0.25, eyeR * 0.1, 0, Math.PI * 2);
         ctx.fill();
     });
 
-    // Ноздри на кончике носа
+    // Усы дракона (龙须) - длинные и изящные
+    const whiskerColor = colors.headLight;
+    ctx.strokeStyle = whiskerColor;
+    ctx.lineWidth = 2;
+    ctx.lineCap = 'round';
+
+    [1, -1].forEach(side => {
+        // Основной длинный ус
+        const startX = headLen * 0.35;
+        const startY = side * headW * 0.15;
+        const wave = whiskerWave * side;
+
+        ctx.beginPath();
+        ctx.moveTo(startX, startY);
+        ctx.bezierCurveTo(
+            startX + headLen * 0.3, startY + side * headW * 0.1 + wave * headW,
+            startX + headLen * 0.5, startY + side * headW * 0.25 + wave * headW * 2,
+            startX + headLen * 0.7, startY + side * headW * 0.15 + wave * headW
+        );
+        ctx.stroke();
+
+        // Второй короткий ус
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(startX - headLen * 0.05, startY + side * headW * 0.08);
+        ctx.bezierCurveTo(
+            startX + headLen * 0.15, startY + side * headW * 0.2 + wave * headW * 0.5,
+            startX + headLen * 0.25, startY + side * headW * 0.3 + wave * headW,
+            startX + headLen * 0.35, startY + side * headW * 0.25 + wave * headW * 0.5
+        );
+        ctx.stroke();
+    });
+
+    // Ноздри на кончике носа - более выразительные
     ctx.fillStyle = '#1a1a1a';
     ctx.beginPath();
-    ctx.ellipse(headLen * 0.42, -headW * 0.06, 2, 2.5, 0.3, 0, Math.PI * 2);
+    ctx.ellipse(headLen * 0.48, -headW * 0.05, 2.5, 3, 0.2, 0, Math.PI * 2);
     ctx.fill();
     ctx.beginPath();
-    ctx.ellipse(headLen * 0.42, headW * 0.06, 2, 2.5, -0.3, 0, Math.PI * 2);
+    ctx.ellipse(headLen * 0.48, headW * 0.05, 2.5, 3, -0.2, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Маленький блик на носу
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+    ctx.beginPath();
+    ctx.ellipse(headLen * 0.45, -headW * 0.02, 3, 2, 0, 0, Math.PI * 2);
     ctx.fill();
 
     ctx.restore();
